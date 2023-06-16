@@ -1,7 +1,9 @@
 MAX_ARGS:	equ 1
 	include "include/crt.inc"
 	include "include/vdp.inc"
+	include "include/math.inc"
 	include "include/utils.inc"	
+	include "include/player.inc"
 
 SPR_PLAYER: equ 60
 
@@ -22,38 +24,36 @@ _main:
 	ld bc, 32+22+23+22+23+22+23
 	call draw_bitmap
 
-;	ld b, 13
-;	ld hl, 8 
-;@line_loop:
-;	push bc
-;	ld a, BMP_LINE
-;	ld c, l
-;	ld b, h
-;	ld de, 180
-;	call draw_bitmap
-;	ld a, 16
-;	ld b, 0
-;	ld c, a
-;	add hl, bc
-;	pop bc
-;	djnz @line_loop
+	ld b, 13
+	ld hl, 8 
+@line_loop:
+	push bc
+	ld a, BMP_LINE
+	ld c, l
+	ld b, h
+	ld de, 180
+	call draw_bitmap
+	ld a, 16
+	ld b, 0
+	ld c, a
+	add hl, bc
+	pop bc
+	djnz @line_loop
 	
-	ld a, 8
-	ld ix, bottom_line
-	call draw_line
+;	ld a, 8
+;	ld ix, bottom_line
+;	call draw_line
 	
 	ld a, SPR_PLAYER
 	ld hl, player_sprite_data	
 	call def_sprite
 	call show_sprite
-	ld bc, 35 
-	ld de, 165
-	call move_sprite
 
 @loop:
 	call delay 
 	call update_enemies
 	call update_sprites
+	call process_player
 
 	ld a, (keycode)
 	cp 27
@@ -103,7 +103,7 @@ init_enemies:
 	add a, 1
 	djnz @inv_def_loop
 
-	ld a, 55
+	ld a, 60
 	call activate_sprites
 	
 	pop de
@@ -143,9 +143,9 @@ update_enemies:
 	jp c, @1
 
 @do_swap:
-	ld hl, (last_invader_x_pos)	; Print coord triggering swap
-	call home_cursor
-	call print_Hex16
+	;ld hl, (last_invader_x_pos)	; Print coord triggering swap
+	;call home_cursor
+	;call print_Hex16
 
 	ld a, 1						; Flag a swap at the end of this rack move
 	ld (should_swap), a
