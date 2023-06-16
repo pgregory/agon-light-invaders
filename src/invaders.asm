@@ -6,6 +6,7 @@ MAX_ARGS:	equ 1
 	include "include/player.inc"
 
 SPR_PLAYER: equ 60
+SPR_BULLET: equ 61
 
 _main:
 	call vdp_init
@@ -49,6 +50,10 @@ _main:
 	call def_sprite
 	call show_sprite
 
+	ld a, SPR_BULLET
+	ld hl, bullet_sprite_data	
+	call def_sprite
+
 @loop:
 	call delay 
 	call update_enemies
@@ -56,6 +61,15 @@ _main:
 	call process_player
 
 	ld a, (keycode)
+
+	; Print keycode for identification
+    ;push af
+	;ld l, a
+	;ld h, 0
+	;call home_cursor
+	;call print_Hex16
+    ;pop af
+
 	cp 27
 	jr z, exit
 
@@ -103,7 +117,7 @@ init_enemies:
 	add a, 1
 	djnz @inv_def_loop
 
-	ld a, 60
+	ld a, 61
 	call activate_sprites
 	
 	pop de
@@ -277,6 +291,9 @@ invader1:
 player_sprite_data:
 	db 1, BMP_PLAYER
 
+
+bullet_sprite_data:
+	db 1, BMP_BULLET
 
 invaders:
 	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0

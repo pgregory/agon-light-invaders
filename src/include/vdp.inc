@@ -21,6 +21,7 @@ BMP_SAUCER:		equ $06
 BMP_SHIELD:		equ $07
 BMP_LINE:		equ $08
 BMP_PLAYER:		equ $09
+BMP_BULLET:		equ $0A
 
 
 
@@ -159,6 +160,7 @@ vdp_init:
 	DEFBMP BMP_SHIELD, 22, 16, "imgs/shield.rgba"
 	DEFBMP BMP_LINE, 16, 1, "imgs/line.rgba"
 	DEFBMP BMP_PLAYER, 16, 8, "imgs/player.rgba"
+	DEFBMP BMP_BULLET, 1, 4, "imgs/bullet.rgba"
 	db 12
 @end:	
 
