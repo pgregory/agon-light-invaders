@@ -1,3 +1,5 @@
+SPR_PLAYER: equ 60
+SPR_BULLET: equ 61
 
 KEY_LEFT: equ 8
 KEY_RIGHT: equ 21
@@ -15,6 +17,19 @@ bullet_pos_y:
     db BULLET_START_YPOS
 bullet_active:
     db 0
+    
+
+init_player:
+	ld a, SPR_PLAYER
+	ld hl, player_sprite_data	
+	call def_sprite
+	call show_sprite
+
+	ld a, SPR_BULLET
+	ld hl, bullet_sprite_data	
+	call def_sprite
+    ret
+
 
 
 process_player:
@@ -78,17 +93,15 @@ process_player:
     
 @move_bullet:
     ld a, (bullet_active)
-
-    push af
-	ld l, a
-	ld h, 0
-	call home_cursor
-	call print_Hex16
-    pop af
-
     and a
     jp z, @done
     
+    ld a, (bullet_pos_y)
+    sbc a, 2
+    jp c, @bullet_exited
+
+    ld (bullet_pos_y), a
+
     ld a, (bullet_pos_x)
     ld c, a
     ld b, 0
@@ -97,20 +110,21 @@ process_player:
     ld d, 0
     ld a, SPR_BULLET
     call move_sprite
+    call get_pixel_color
     
-    ld a, (bullet_pos_y)
-    sbc a, 2
-    jp nc, @bullet_still_active
-
+    ld hl, (pixel_data_ptr)
+    ld hl, (hl)
+    ld a, h
+    and a
+    jp z, @done
+    
+@bullet_hit:
+@bullet_exited:
     xor a
     ld (bullet_active), a
     ld a, SPR_BULLET
-    call hide_sprite
-    jr @done
+    ;call hide_sprite
 
-@bullet_still_active:
-    ld (bullet_pos_y), a
-    
 @done:
     pop bc
     pop hl

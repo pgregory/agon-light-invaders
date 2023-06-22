@@ -43,6 +43,13 @@ VK_D: equ 152
 VK_L: equ 154
 VK_R: equ 156
 
+pixel_data_ptr:
+	dl 0
+screen_width_ptr:
+	dl 0
+screen_height_ptr:
+	dl 0
+
 vk_down:
 	ld hl, (vk_code)
 	ld a, (hl)
@@ -131,13 +138,19 @@ vdp_init:
 	ld  (vk_code), hl
 	lea hl, ix+$18
 	ld (key_up), hl
+	lea hl, ix+$0a
+	ld (pixel_data_ptr), hl
+	lea hl, ix+$0f
+	ld (screen_width_ptr), hl
+	lea hl, ix+$11
+	ld (screen_height_ptr), hl
 
 	ld (frame_ptr), ix
 
 	ld hl, @cmd
 	ld bc, @end-@cmd
 	rst.lil $18
-	
+
 	ret
 @cmd:
 	db 22, 2 ;; Mode 1
@@ -147,6 +160,7 @@ vdp_init:
 	db 23, 0, $88
 	dw 250, 33
 	db 255	
+	db 23, 0, $86
 	db 23, 27, 16 
 	db "Sending bitmaps to VDP", 13, 10
 
@@ -411,6 +425,7 @@ move_sprite:
 	push af
 	push hl
 	push bc
+	push de
 	ld (@spr), a
 	ld a, c
 	ld (@c_x), a
@@ -423,6 +438,7 @@ move_sprite:
 	ld hl, @cmd
 	ld bc, @end-@cmd
 	rst.lil $18
+	pop de
 	pop bc
 	pop hl
 	pop af
@@ -561,4 +577,29 @@ draw_line:
 	dw 168 
 @y2:
 	dw 180 
+@end:
+
+
+
+; BC - X
+; DE - Y
+get_pixel_color:
+	push hl
+	push bc
+	push de
+	ld (@x), bc
+	ld (@y), de
+	ld hl, @cmd
+	ld bc, @end-@cmd
+	rst.lil $18
+	pop de
+	pop bc
+	pop hl
+	ret
+@cmd:
+	db 23, 0, $84
+@x:
+	dw 0 
+@y:
+	dw 0
 @end:

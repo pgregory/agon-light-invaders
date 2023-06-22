@@ -5,9 +5,6 @@ MAX_ARGS:	equ 1
 	include "include/utils.inc"	
 	include "include/player.inc"
 
-SPR_PLAYER: equ 60
-SPR_BULLET: equ 61
-
 _main:
 	call vdp_init
 
@@ -41,19 +38,7 @@ _main:
 	pop bc
 	djnz @line_loop
 	
-;	ld a, 8
-;	ld ix, bottom_line
-;	call draw_line
-	
-	ld a, SPR_PLAYER
-	ld hl, player_sprite_data	
-	call def_sprite
-	call show_sprite
-
-	ld a, SPR_BULLET
-	ld hl, bullet_sprite_data	
-	call def_sprite
-
+	call init_player
 @loop:
 	call delay 
 	call update_enemies
