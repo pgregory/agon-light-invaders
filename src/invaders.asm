@@ -1,3 +1,8 @@
+; Assembly control flags
+DEBUG: equ 0
+USE_SPRITES: equ 1
+
+
 MAX_ARGS:	equ 1
 	include "include/crt.inc"
 	include "include/vdp.inc"
@@ -38,22 +43,31 @@ _main:
 	pop bc
 	djnz @line_loop
 	
+	;ld a, 8
+	;call draw_line
+	
 	call init_player
 @loop:
 	call delay 
 	call update_enemies
+
+	if USE_SPRITES
 	call update_sprites
+	endif
+
 	call process_player
 
 	ld a, (keycode)
 
+	if DEBUG
 	; Print keycode for identification
-    ;push af
-	;ld l, a
-	;ld h, 0
-	;call home_cursor
-	;call print_Hex16
-    ;pop af
+    push af
+	ld l, a
+	ld h, 0
+	call home_cursor
+	call print_Hex16
+    pop af
+	endif
 
 	cp 27
 	jr z, exit
@@ -79,9 +93,10 @@ init_enemies:
 	ld a, 0 ; Sprite index
 	ld b, 55 ; Number of enemies
 @inv_def_loop:
-
+	if USE_SPRITES
 	call get_inv_type
 	call def_sprite
+	endif
 
 	ld hl, invaders
 	ld e, a
@@ -92,17 +107,15 @@ init_enemies:
 	ld a, e
 	jp z, @done
 
+	if USE_SPRITES
 	call show_sprite
-	push bc
-	call get_inv_coords
-	call move_sprite
-	pop bc
+	endif
 
 @done:
 	add a, 1
 	djnz @inv_def_loop
 
-	ld a, 61
+	ld a, 62
 	call activate_sprites
 	
 	pop de
@@ -131,8 +144,14 @@ update_enemies:
 	
 	call get_inv_coords			; Get invader coords BC, HL
 	ld (last_invader_x_pos), bc	; Store X for boundary check
+
+	if USE_SPRITES
 	call move_sprite			; Move sprite into position
 	call next_frame_sprite		; Animate sprite frame
+	else
+	call clear_invader_bmp
+	call draw_invader
+	endif
 
 	ld hl, (last_invader_x_pos)	; Check boundary conditions
 	ld a, l
@@ -271,6 +290,9 @@ invader1:
 	db 2, 0, 1,     0
 	db 2, 2, 3,     0
 	db 2, 4, 5,     0
+
+animation_frame:
+	db 0
 	
 	
 player_sprite_data:
@@ -315,3 +337,54 @@ bottom_line:
 	dw 180
 	dw 168
 	dw 180
+
+
+	if USE_SPRITES
+	else
+; A - bitmap
+; BC - X
+; DE - Y
+draw_invader_bmp:
+	push af
+	call draw_bitmap
+	pop af
+	ret
+	
+	
+; BC - X
+; DE - Y
+clear_invader_bmp:
+	push af
+	ld a, BMP_BLANK
+	call draw_bitmap
+	pop af
+	ret
+	endif
+	
+
+; A - index
+draw_invader:
+	if USE_SPRITES
+	; Sprite mode
+	call show_sprite
+	push bc
+	call get_inv_coords
+	call move_sprite
+	pop bc
+
+	else
+	
+	; Bitmap mode
+	push bc
+	call get_inv_type
+	ld c, 1
+	ld b, 0
+	add hl, bc
+	call get_inv_coords
+	ld a, (hl)
+	call draw_invader_bmp
+	pop bc
+	
+	endif
+
+	ret

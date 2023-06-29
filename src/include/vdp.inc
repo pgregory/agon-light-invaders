@@ -23,6 +23,7 @@ BMP_LINE:		equ $08
 BMP_PLAYER:		equ $09
 BMP_BULLET:		equ $0A
 
+BMP_BLANK:		equ $0B
 
 
 keycode_ptr:	dl	0
@@ -160,8 +161,9 @@ vdp_init:
 	db 23, 0, $88
 	dw 250, 33
 	db 255	
-	db 23, 0, $86
-	db 23, 27, 16 
+	db 23, 0, $86    ; Get screen dimensions
+	db 23, 27, 16    ; Reset and clear sprites
+	db 23, 0, $C0, 0 ; Turn off logical screen coordinates.
 	db "Sending bitmaps to VDP", 13, 10
 
 	DEFBMP BMP_INVADER1_1, 16, 16, "imgs/invader1_1.rgba"
@@ -175,6 +177,7 @@ vdp_init:
 	DEFBMP BMP_LINE, 16, 1, "imgs/line.rgba"
 	DEFBMP BMP_PLAYER, 16, 8, "imgs/player.rgba"
 	DEFBMP BMP_BULLET, 1, 4, "imgs/bullet.rgba"
+	DEFBMP BMP_BLANK, 16, 16, "imgs/blank_invader.rgba"
 	db 12
 @end:	
 
@@ -195,44 +198,6 @@ bmp_select:
 @bmp:
 	db 0
 @end:
-
-
-; de - coords
-bmp_draw:
-	ld b, 16
-	ld c, e
-	mlt bc
-
-	ld a, c
-	ld (@c_x), a
-
-	ld a, b
-	ld (@c_x+1), a
-
-	ld b, 16
-	ld c, d
-	mlt bc
-	ld hl, 8
-	add hl, bc
-	
-	ld a, l
-	ld (@c_y), a
-
-	ld a, h
-	ld (@c_y+1), a
-
-
-	ld hl, @cmd
-	ld bc, @end-@cmd
-	rst.lil $18
-	ret
-@cmd:
-	db 23, 27, 3
-@c_x:
-	dw 0
-@c_y:	dw 0
-@end:
-
 
 
 cursor_on:

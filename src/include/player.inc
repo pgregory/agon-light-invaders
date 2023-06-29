@@ -110,6 +110,7 @@ process_player:
     ld d, 0
     ld a, SPR_BULLET
     call move_sprite
+    
     call get_pixel_color
     
     ld hl, (pixel_data_ptr)
