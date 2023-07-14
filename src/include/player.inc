@@ -1,5 +1,8 @@
 SPR_PLAYER: equ 60
 SPR_BULLET: equ 61
+SPR_INV_EXPLOSION: equ 62
+
+MAX_SPR: equ 63
 
 KEY_LEFT: equ 8
 KEY_RIGHT: equ 21
@@ -111,6 +114,10 @@ process_player:
     ld a, SPR_BULLET
     call move_sprite
     
+    ld a, (bullet_pos_y)
+    sub a, 4
+    ld e, a
+    ld d, 0
     call get_pixel_color
     
     ld hl, (pixel_data_ptr)
@@ -120,11 +127,49 @@ process_player:
     jp z, @done
     
 @bullet_hit:
+    ld a, (bullet_pos_x)
+    ld c, a
+    ld b, 0
+    ld a, (bullet_pos_y)
+    ld e, a
+    ld d, 0
+    call get_inv_at
+    
+    ; print invader index hit
+    push af
+	ld h, a
+    ld a, (invader_off_x)
+	ld l, a
+	call home_cursor
+	call print_Hex16
+    pop af
+
+    cp 55 
+    jp nc, @bullet_exited
+
+
+    ld hl, invaders				; Point to invaders status table
+    ld c, a						; Store invader cursor
+    ld b, 0						; Clear MSB
+    add hl, bc					; Point to this invader status
+    ld (hl), 1
+    call hide_sprite
+    
+    call get_inv_coords
+    ld a, SPR_INV_EXPLOSION
+    call move_sprite
+    call show_sprite
+
+    ld a, 1
+    ld (inv_exploding), a
+    ld a, $10
+    ld (inv_explode_time), a
+    
 @bullet_exited:
     xor a
     ld (bullet_active), a
     ld a, SPR_BULLET
-    ;call hide_sprite
+    call hide_sprite
 
 @done:
     pop bc

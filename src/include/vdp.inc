@@ -25,6 +25,8 @@ BMP_BULLET:		equ $0A
 
 BMP_BLANK:		equ $0B
 
+BMP_INV_EXPLOSION: equ $0C
+
 
 keycode_ptr:	dl	0
 frame_ptr:	dl	0
@@ -178,6 +180,7 @@ vdp_init:
 	DEFBMP BMP_PLAYER, 16, 8, "imgs/player.rgba"
 	DEFBMP BMP_BULLET, 1, 4, "imgs/bullet.rgba"
 	DEFBMP BMP_BLANK, 16, 16, "imgs/blank_invader.rgba"
+	DEFBMP BMP_INV_EXPLOSION, 16, 16, "imgs/alien_explosion.rgba"
 	db 12
 @end:	
 

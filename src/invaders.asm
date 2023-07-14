@@ -47,6 +47,12 @@ _main:
 	;call draw_line
 	
 	call init_player
+	
+	if USE_SPRITES
+	ld a, MAX_SPR
+	call activate_sprites
+	endif
+
 @loop:
 	call delay 
 	call update_enemies
@@ -114,10 +120,12 @@ init_enemies:
 @done:
 	add a, 1
 	djnz @inv_def_loop
-
-	ld a, 62
-	call activate_sprites
 	
+	ld a, SPR_INV_EXPLOSION
+	ld hl, inv_explosion_sprite_data
+	call def_sprite
+	call hide_sprite
+
 	pop de
 	pop bc
 	pop hl
@@ -130,6 +138,10 @@ update_enemies:
 	push af
 	push bc
 	push hl
+	
+	ld a, (inv_exploding)
+	and a
+	jp nz, @inv_exploding_countdown
 	
 	ld a, (invader_cursor)
 @try:
@@ -199,6 +211,17 @@ update_enemies:
 	ld a, (invader_off_x)
 	add a, b
 	ld (invader_off_x), a
+	jp @next
+
+@inv_exploding_countdown:
+	ld hl, inv_explode_time
+	dec (hl)
+	jp nz, @next
+	ld a, SPR_INV_EXPLOSION
+	call hide_sprite
+	
+	ld a, 0
+	ld (inv_exploding), a
 
 @next:
 	pop hl
@@ -246,6 +269,54 @@ get_inv_coords:
 	ld e, a
 	pop af
 	ret
+  
+; BC - X
+; DE - Y 
+; Returns A - index
+get_inv_at:
+	push bc
+	push de
+	push hl
+	ld a, (invader_ref_y)
+	add a, 16 ; Bottom pixel row or invader rank
+	cp e
+	; Check if below the bottom row 
+	jp c, @none_y
+	sub e
+	srl a
+	srl a
+	srl a
+	srl	a; Divide by 16 to get row
+	ld l, a
+	ld h, 11
+	mlt hl
+	ld a, (invader_off_x)
+	add a, 24
+	;cp c
+	;jp nc, @none_x
+	ld e, a
+	ld a, c
+	sub e
+	srl a
+	srl a
+	srl a
+	srl a; Divide by 16 to get column
+	add a, l
+	jp @done
+	
+@none_y:
+	ld a, $AA
+	jp @done
+
+@none_x:
+	ld a, $BB
+
+@done:
+	pop hl
+	pop de
+	pop bc
+	ret
+
 
 
 
@@ -302,12 +373,16 @@ player_sprite_data:
 bullet_sprite_data:
 	db 1, BMP_BULLET
 
+	
+inv_explosion_sprite_data:
+	db 1, BMP_INV_EXPLOSION
+	
 invaders:
-	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	;db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	;db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	;db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	;db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	;db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
 	db 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
 	db 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
@@ -319,10 +394,8 @@ invaders:
 invader_cursor:
 	db 0
 
-invader_ref_x:
-	dw 0
 invader_ref_y:
-	dw 0
+	db 80
 invader_off_x:
 	db 0
 invader_direction:
@@ -330,6 +403,11 @@ invader_direction:
 last_invader_x_pos:
 	dw 0, 0
 should_swap:
+	db 0
+	
+inv_exploding:
+	db 0
+inv_explode_time:
 	db 0
 
 bottom_line:
