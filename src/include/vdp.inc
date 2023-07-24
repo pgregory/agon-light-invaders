@@ -27,6 +27,8 @@ BMP_BLANK:		equ $0B
 
 BMP_INV_EXPLOSION: equ $0C
 
+BMP_PLYR_B_EXPL: equ $0D
+
 
 keycode_ptr:	dl	0
 frame_ptr:	dl	0
@@ -52,6 +54,9 @@ screen_width_ptr:
 	dl 0
 screen_height_ptr:
 	dl 0
+	
+next_sprite_index:
+	db 0
 
 vk_down:
 	ld hl, (vk_code)
@@ -181,6 +186,7 @@ vdp_init:
 	DEFBMP BMP_BULLET, 1, 4, "imgs/bullet.rgba"
 	DEFBMP BMP_BLANK, 16, 16, "imgs/blank_invader.rgba"
 	DEFBMP BMP_INV_EXPLOSION, 16, 16, "imgs/alien_explosion.rgba"
+	DEFBMP BMP_PLYR_B_EXPL, 8, 8, "imgs/plyr_b_expl.rgba"
 	db 12
 @end:	
 

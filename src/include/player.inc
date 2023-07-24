@@ -1,8 +1,3 @@
-SPR_PLAYER: equ 60
-SPR_BULLET: equ 61
-SPR_INV_EXPLOSION: equ 62
-
-MAX_SPR: equ 63
 
 KEY_LEFT: equ 8
 KEY_RIGHT: equ 21
@@ -10,6 +5,12 @@ KEY_FIRE: equ 32
 PLAYER_YPOS: equ 165
 BULLET_START_YPOS: equ 160
 
+
+player_spr:
+    db 0
+
+bullet_spr:
+    db 0
 
 player_position: 
     db 35
@@ -21,16 +22,28 @@ bullet_pos_y:
 bullet_active:
     db 0
     
+player_sprite_data:
+	db 1, BMP_PLAYER
+bullet_sprite_data:
+	db 1, BMP_BULLET
 
 init_player:
-	ld a, SPR_PLAYER
+    if USE_SPRITES
+	ld a, (next_sprite_index)
+    ld (player_spr), a
 	ld hl, player_sprite_data	
 	call def_sprite
 	call show_sprite
+    add a, 1
 
-	ld a, SPR_BULLET
+    ld (bullet_spr), a
 	ld hl, bullet_sprite_data	
 	call def_sprite
+
+    add a, 1
+    ld (next_sprite_index), a
+    endif
+
     ret
 
 
@@ -71,7 +84,7 @@ process_player:
     ld a, (player_position)
     ld c, a
     ld b, 0
-    ld a, SPR_PLAYER
+    ld a, (player_spr)
     ld de, PLAYER_YPOS
     call move_sprite
     
@@ -84,7 +97,7 @@ process_player:
     and a
     jp nz, @move_bullet
     
-    ld a, SPR_BULLET
+    ld a, (bullet_spr)
     ld (bullet_active), a
     call show_sprite
 
@@ -111,7 +124,7 @@ process_player:
     ld a, (bullet_pos_y)
     ld e, a
     ld d, 0
-    ld a, SPR_BULLET
+    ld a, (bullet_spr)
     call move_sprite
     
     ld a, (bullet_pos_y)
@@ -127,6 +140,26 @@ process_player:
     jp z, @done
     
 @bullet_hit:
+    ; Check if the hit is in the range of the shields
+    ld a, (bullet_pos_y)
+    cp $80
+    jp c, @check_inv
+
+    ld a, (bullet_pos_x)
+    sub 4
+    ld c, a
+    ld b, 0
+    ld a, (bullet_pos_y)
+    sub 4
+    ld e, a
+    ld d, 0
+    ld a, BMP_PLYR_B_EXPL
+    call draw_bitmap
+
+    jp @bullet_exited
+    
+@check_inv:
+    ; Check if hit an invader
     ld a, (bullet_pos_x)
     ld c, a
     ld b, 0
@@ -136,17 +169,16 @@ process_player:
     call get_inv_at
     
     ; print invader index hit
-    push af
-	ld h, a
-    ld a, (invader_off_x)
-	ld l, a
-	call home_cursor
-	call print_Hex16
-    pop af
+    ;push af
+	;ld h, a
+    ;ld a, (bullet_pos_y)
+	;ld l, a
+	;call home_cursor
+	;call print_Hex16
+    ;pop af
 
     cp 55 
     jp nc, @bullet_exited
-
 
     ld hl, invaders				; Point to invaders status table
     ld c, a						; Store invader cursor
@@ -156,7 +188,7 @@ process_player:
     call hide_sprite
     
     call get_inv_coords
-    ld a, SPR_INV_EXPLOSION
+    ld a, (inv_explode_spr)
     call move_sprite
     call show_sprite
 
@@ -168,7 +200,7 @@ process_player:
 @bullet_exited:
     xor a
     ld (bullet_active), a
-    ld a, SPR_BULLET
+    ld a, (bullet_spr)
     call hide_sprite
 
 @done:
@@ -177,3 +209,4 @@ process_player:
     pop de
     pop af
     ret
+    

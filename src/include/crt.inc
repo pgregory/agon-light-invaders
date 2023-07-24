@@ -122,5 +122,3 @@ printZ:
 	ld a, func
 	rst.lil $08
 	endmacro
-
-

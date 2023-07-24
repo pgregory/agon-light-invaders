@@ -2,7 +2,6 @@
 DEBUG: equ 0
 USE_SPRITES: equ 1
 
-
 MAX_ARGS:	equ 1
 	include "include/crt.inc"
 	include "include/vdp.inc"
@@ -15,6 +14,7 @@ _main:
 
 	; Initialise the invader sprites
 	call init_enemies
+	call init_player
 	
 	ld a, BMP_SHIELD
 	ld bc, 32
@@ -46,10 +46,9 @@ _main:
 	;ld a, 8
 	;call draw_line
 	
-	call init_player
 	
 	if USE_SPRITES
-	ld a, MAX_SPR
+	ld a, (next_sprite_index)
 	call activate_sprites
 	endif
 
@@ -96,7 +95,7 @@ init_enemies:
 	push bc
 	push de
 	
-	ld a, 0 ; Sprite index
+	ld a, (next_sprite_index) ; Sprite index
 	ld b, 55 ; Number of enemies
 @inv_def_loop:
 	if USE_SPRITES
@@ -121,10 +120,13 @@ init_enemies:
 	add a, 1
 	djnz @inv_def_loop
 	
-	ld a, SPR_INV_EXPLOSION
+	ld (inv_explode_spr), a
 	ld hl, inv_explosion_sprite_data
 	call def_sprite
 	call hide_sprite
+
+	add a, 1
+	ld (next_sprite_index), a
 
 	pop de
 	pop bc
@@ -217,7 +219,7 @@ update_enemies:
 	ld hl, inv_explode_time
 	dec (hl)
 	jp nz, @next
-	ld a, SPR_INV_EXPLOSION
+	ld a, (inv_explode_spr)
 	call hide_sprite
 	
 	ld a, 0
@@ -292,8 +294,6 @@ get_inv_at:
 	mlt hl
 	ld a, (invader_off_x)
 	add a, 24
-	;cp c
-	;jp nc, @none_x
 	ld e, a
 	ld a, c
 	sub e
@@ -366,24 +366,17 @@ animation_frame:
 	db 0
 	
 	
-player_sprite_data:
-	db 1, BMP_PLAYER
-
-
-bullet_sprite_data:
-	db 1, BMP_BULLET
-
-	
 inv_explosion_sprite_data:
 	db 1, BMP_INV_EXPLOSION
 	
 invaders:
-	;db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	;db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	;db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	;db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	;db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
+	; Test set with some invaders killed
 	db 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
 	db 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
 	db 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0
@@ -408,6 +401,9 @@ should_swap:
 inv_exploding:
 	db 0
 inv_explode_time:
+	db 0
+	
+inv_explode_spr:
 	db 0
 
 bottom_line:
