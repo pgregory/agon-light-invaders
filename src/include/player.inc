@@ -139,25 +139,12 @@ process_player:
     and a
     jp z, @done
     
-@bullet_hit:
-    ; Check if the hit is in the range of the shields
-    ld a, (bullet_pos_y)
-    cp $80
-    jp c, @check_inv
+    ; print pixel color 
+    ;push af
+	;call home_cursor
+	;call print_Hex16
+    ;pop af
 
-    ld a, (bullet_pos_x)
-    sub 4
-    ld c, a
-    ld b, 0
-    ld a, (bullet_pos_y)
-    sub 4
-    ld e, a
-    ld d, 0
-    ld a, BMP_PLYR_B_EXPL
-    call draw_bitmap
-
-    jp @bullet_exited
-    
 @check_inv:
     ; Check if hit an invader
     ld a, (bullet_pos_x)
@@ -177,8 +164,8 @@ process_player:
 	;call print_Hex16
     ;pop af
 
-    cp 55 
-    jp nc, @bullet_exited
+    cp 0x55 
+    jp nc, @check_shields
 
     ld hl, invaders				; Point to invaders status table
     ld c, a						; Store invader cursor
@@ -196,6 +183,27 @@ process_player:
     ld (inv_exploding), a
     ld a, $10
     ld (inv_explode_time), a
+    
+    jp @bullet_exited
+
+@check_shields:
+    ; Check if the hit is in the range of the shields
+    ld a, (bullet_pos_y)
+    cp $80
+    jp c, @bullet_exited
+
+    ld a, (bullet_pos_x)
+    sub 4
+    ld c, a
+    ld b, 0
+    ld a, (bullet_pos_y)
+    sub 4
+    ld e, a
+    ld d, 0
+    ld a, BMP_PLYR_B_EXPL
+    call draw_bitmap
+
+    jp @bullet_exited
     
 @bullet_exited:
     xor a

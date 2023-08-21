@@ -29,6 +29,11 @@ BMP_INV_EXPLOSION: equ $0C
 
 BMP_PLYR_B_EXPL: equ $0D
 
+BMP_INV_SHOT_F1: equ $0E
+BMP_INV_SHOT_F2: equ $0F
+BMP_INV_SHOT_F3: equ $10
+BMP_INV_SHOT_F4: equ $11
+
 
 keycode_ptr:	dl	0
 frame_ptr:	dl	0
@@ -187,6 +192,10 @@ vdp_init:
 	DEFBMP BMP_BLANK, 16, 16, "imgs/blank_invader.rgba"
 	DEFBMP BMP_INV_EXPLOSION, 16, 16, "imgs/alien_explosion.rgba"
 	DEFBMP BMP_PLYR_B_EXPL, 8, 8, "imgs/plyr_b_expl.rgba"
+	DEFBMP BMP_INV_SHOT_F1, 3, 8, "imgs/invader_shot_f1.rgba"
+	DEFBMP BMP_INV_SHOT_F2, 3, 8, "imgs/invader_shot_f2.rgba"
+	DEFBMP BMP_INV_SHOT_F3, 3, 8, "imgs/invader_shot_f3.rgba"
+	DEFBMP BMP_INV_SHOT_F4, 3, 8, "imgs/invader_shot_f4.rgba"
 	db 12
 @end:	
 
