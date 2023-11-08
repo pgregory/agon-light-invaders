@@ -8,8 +8,9 @@ BULLET_START_YPOS: equ 160
 
 player_spr:
     db 0
-
 bullet_spr:
+    db 0
+player_exp_spr:
     db 0
 
 player_position: 
@@ -21,11 +22,22 @@ bullet_pos_y:
     db BULLET_START_YPOS
 bullet_active:
     db 0
+
+player_exploding:
+	db 0
+player_explode_time:
+	db 0
+player_explode_counter:
+    db 0
     
 player_sprite_data:
 	db 1, BMP_PLAYER
 bullet_sprite_data:
 	db 1, BMP_BULLET
+player_exp_sprite_data:
+    db 2, BMP_PLAYER_EXP1, BMP_PLAYER_EXP2
+
+    
 
 init_player:
     if USE_SPRITES
@@ -39,8 +51,13 @@ init_player:
     ld (bullet_spr), a
 	ld hl, bullet_sprite_data	
 	call def_sprite
-
     add a, 1
+    
+    ld (player_exp_spr), a
+    ld hl, player_exp_sprite_data
+    call def_sprite
+    add a, 1
+
     ld (next_sprite_index), a
     endif
 
@@ -54,6 +71,11 @@ process_player:
     push hl
     push bc
     
+    ld a, (player_exploding)
+    and a
+    jp nz, @player_exploding_countdown
+
+
     ld a, (keycode)
 
     cp KEY_RIGHT
@@ -179,7 +201,7 @@ process_player:
     call move_sprite
     call show_sprite
 
-    ld a, 1
+    ld a, 2
     ld (inv_exploding), a
     ld a, $10
     ld (inv_explode_time), a
@@ -210,6 +232,27 @@ process_player:
     ld (bullet_active), a
     ld a, (bullet_spr)
     call hide_sprite
+    jr @done
+
+@player_exploding_countdown:
+    ld hl, player_explode_time
+    dec (hl)
+    jp nz, @done
+
+    ld a, (player_exp_spr)
+    call next_frame_sprite
+    ld (hl), $05
+    ld hl, player_explode_counter
+    dec (hl)
+    jp nz, @done
+    
+	ld a, (player_exp_spr)
+	call hide_sprite
+    ld a, (player_spr)
+    call show_sprite
+	
+	ld a, 0
+	ld (player_exploding), a
 
 @done:
     pop bc
@@ -218,3 +261,34 @@ process_player:
     pop af
     ret
     
+
+explode_player:
+    push af
+    push de
+    push bc
+    push hl
+    ld a, 2
+    ld (player_exploding), a
+    ld a, $05
+    ld (player_explode_time), a
+    ld a, $0C
+    ld (player_explode_counter), a
+    ld a, (player_spr)
+    call hide_sprite
+
+    ld a, (player_exp_spr)
+    call show_sprite
+
+    ld a, (player_position)
+    ld c, a
+    ld b, 0
+    ld a, (player_exp_spr)
+    ld de, PLAYER_YPOS
+    call move_sprite
+
+    pop hl
+    pop bc
+    pop de
+    pop af
+    
+    ret

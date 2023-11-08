@@ -1,0 +1,151 @@
+; Assembly control flags
+DEBUG: equ 0
+USE_SPRITES: equ 1
+
+MAX_ARGS:	equ 1
+	include "include/crt.inc"
+	include "include/vdp.inc"
+	include "include/math.inc"
+	include "include/utils.inc"	
+	include "include/player.inc"
+	include "include/invaders.inc"
+
+_main:
+	call vdp_init
+	
+	; Initialise the invader sprites
+	call init_invaders
+	call invader_shoot
+	call init_player
+	
+	ld a, BMP_SHIELD
+	ld bc, 32
+	ld de, 140
+	call draw_bitmap
+	ld bc, 32+22+23
+	call draw_bitmap
+	ld bc, 32+22+23+22+23
+	call draw_bitmap
+	ld bc, 32+22+23+22+23+22+23
+	call draw_bitmap
+
+	ld b, 13
+	ld hl, 8 
+@line_loop:
+	push bc
+	ld a, BMP_LINE
+	ld c, l
+	ld b, h
+	ld de, 180
+	call draw_bitmap
+	ld a, 16
+	ld b, 0
+	ld c, a
+	add hl, bc
+	pop bc
+	djnz @line_loop
+	
+	;ld a, 8
+	;call draw_line
+	
+	
+	if USE_SPRITES
+	ld a, (next_sprite_index)
+	call activate_sprites
+	endif
+
+@loop:
+	call delay 
+	call update_invaders
+	call update_invader_shots
+
+	if USE_SPRITES
+	call update_sprites
+	endif
+
+	call process_player
+	call update_gui
+
+	ld a, (keycode)
+
+	if DEBUG
+	; Print keycode for identification
+    push af
+	ld l, a
+	ld h, 0
+	call home_cursor
+	call print_Hex16
+    pop af
+	endif
+
+	cp 27
+	jr z, exit
+
+	jr @loop
+exit:	
+	call vdp_close
+	ret
+
+delay:
+	ld b, 1
+@loop:	
+	call vsync
+	djnz @loop
+	ret
+
+	
+
+shot_pos_x:
+    db $40
+shot_pos_y:
+    db BULLET_START_YPOS
+shot_active:
+    db 1
+
+bottom_line:
+	dw 8
+	dw 180
+	dw 168
+	dw 180
+
+
+update_gui:
+	push hl
+	push bc
+	push af
+	ld hl, title
+	ld bc, title_end-title
+	rst.lil $18
+	pop af
+	pop bc
+	pop hl
+
+	ld a, BMP_PLAYER
+	ld bc, 8*30
+	ld de, 165
+	call draw_bitmap
+	ld bc, 8*30+8+16
+	call draw_bitmap
+	ld bc, 8*30+8+16+8+16
+	call draw_bitmap
+
+	ret
+
+title:
+	db 31, 30, 1
+	db "SPACE"
+	db 31, 29, 2
+	db "INVADERS"
+	db 31, 30, 5
+	db "SCORE"
+	db 31, 30, 7
+	db "00020"
+	db 31, 31, 10
+	db "HI"
+	db 31, 30, 11
+	db "SCORE"
+	db 31, 30, 13 
+	db "00020"
+	db 31, 30, 19
+	db "03"
+title_end:

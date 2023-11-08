@@ -1,5 +1,3 @@
-;; All sprites 16x16. Prepares VDP routines and includes binary
-
 	macro DEFBMP arg, w, h, file
 	db 23, 27, 0
 	db arg
@@ -33,6 +31,9 @@ BMP_INV_SHOT_F1: equ $0E
 BMP_INV_SHOT_F2: equ $0F
 BMP_INV_SHOT_F3: equ $10
 BMP_INV_SHOT_F4: equ $11
+
+BMP_PLAYER_EXP1: equ $12
+BMP_PLAYER_EXP2: equ $13
 
 
 keycode_ptr:	dl	0
@@ -163,20 +164,24 @@ vdp_init:
 	ld hl, @cmd
 	ld bc, @end-@cmd
 	rst.lil $18
+	
+	ld a, 0
+	ld (next_sprite_index), a
 
 	ret
+
 @cmd:
-	db 22, 2 ;; Mode 1
+	db 22, 13 ;; Mode 1
 	db 23, 1, 0 ;; Hide cursor
 	db "Video mode established", 13, 10
 	db "Setting keyboard mode", 13,10
+	db "Sending bitmaps to VDP", 13, 10
 	db 23, 0, $88
 	dw 250, 33
 	db 255	
 	db 23, 0, $86    ; Get screen dimensions
 	db 23, 27, 16    ; Reset and clear sprites
 	db 23, 0, $C0, 0 ; Turn off logical screen coordinates.
-	db "Sending bitmaps to VDP", 13, 10
 
 	DEFBMP BMP_INVADER1_1, 16, 16, "imgs/invader1_1.rgba"
 	DEFBMP BMP_INVADER1_2, 16, 16, "imgs/invader1_2.rgba"
@@ -196,8 +201,11 @@ vdp_init:
 	DEFBMP BMP_INV_SHOT_F2, 3, 8, "imgs/invader_shot_f2.rgba"
 	DEFBMP BMP_INV_SHOT_F3, 3, 8, "imgs/invader_shot_f3.rgba"
 	DEFBMP BMP_INV_SHOT_F4, 3, 8, "imgs/invader_shot_f4.rgba"
+	DEFBMP BMP_PLAYER_EXP1, 16, 8, "imgs/player_exp1.rgba"
+	DEFBMP BMP_PLAYER_EXP2, 16, 8, "imgs/player_exp2.rgba"
 	db 12
 @end:	
+
 
 ;; Clear screen
 vdp_cls:

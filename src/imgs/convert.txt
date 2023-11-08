@@ -1,0 +1,1 @@
+convert ../../img_src/player_expl2.png player_expl2.rgba

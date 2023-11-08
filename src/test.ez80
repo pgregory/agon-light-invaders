@@ -1,0 +1,9 @@
+    if SOMETHING
+    ld a, 10
+    endif
+
+@test_label:
+    inc (hl)
+    jp @test_label
+@p:
+    djnz @p
