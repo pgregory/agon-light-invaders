@@ -1,6 +1,6 @@
 ; Assembly control flags
 DEBUG: equ 0
-USE_SPRITES: equ 1
+USE_SPRITES: equ 0
 
 MAX_ARGS:	equ 1
 	include "include/crt.inc"
@@ -48,20 +48,15 @@ _main:
 	;ld a, 8
 	;call draw_line
 	
-	
-	if USE_SPRITES
 	ld a, (next_sprite_index)
 	call activate_sprites
-	endif
 
 @loop:
 	call delay 
 	call update_invaders
 	call update_invader_shots
 
-	if USE_SPRITES
 	call update_sprites
-	endif
 
 	call process_player
 	call update_gui

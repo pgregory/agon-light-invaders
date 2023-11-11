@@ -74,15 +74,14 @@ update_invaders:
 	ld a, (invader_cursor)
 	jp nz, @hide
 	
-	call get_inv_coords			; Get invader coords BC, HL
+	call get_curr_inv_coords	; Get invader coords BC, HL
 	ld (last_invader_x_pos), bc	; Store X for boundary check
 
 	if USE_SPRITES
-	call clear_invader_bmp
 	call move_sprite			; Move sprite into position
 	call next_frame_sprite		; Animate sprite frame
 	else
-	call clear_invader_bmp
+	call clear_invader
 	call draw_invader
 	endif
 
@@ -116,6 +115,12 @@ update_invaders:
 	cp 55
 	jp c, @next					; Carry on if more to go
 
+	ld a, (invader_anim_frame)
+	add a, 1
+	and 1
+	ld (invader_anim_frame), a
+	ld a, (invader_ref_y)
+	ld (last_invader_ref_y), a
 	xor a						; Reset cursor
 	ld (invader_cursor), a
 
@@ -130,6 +135,7 @@ update_invaders:
 	ld a, (invader_direction)	; Move rack in current direction
 	ld b, a
 	ld a, (invader_off_x)
+	ld (last_invader_off_x), a
 	add a, b
 	ld (invader_off_x), a
 	jp @next
@@ -138,8 +144,14 @@ update_invaders:
 	ld hl, inv_explode_time
 	dec (hl)
 	jp nz, @next
+	
+	if USE_SPRITES
 	ld a, (inv_explode_spr)
 	call hide_sprite
+	else
+	ld a, (exploding_inv)
+	call remove_invader
+	endif
 	
 	ld a, 0
 	ld (inv_exploding), a
@@ -281,9 +293,8 @@ bottom_invader_in_column:
 
 	
 ; A - index
-; Returns BC - X, DE - Y 
-get_inv_coords:
-	push af
+; Returns BC - X, DE - Y  relative to reference alien
+get_relative_inv_pos:
 	ld c, 0 ; X ref
 	ld e, 0 ; Y ref
 @row_loop:
@@ -308,6 +319,27 @@ get_inv_coords:
 	dec a
 	jp @col_loop
 @at_col:
+	ret
+
+
+get_prev_inv_coords:
+	push af
+	call get_relative_inv_pos
+	ld b, 0
+	ld d, 0
+	ld a, (last_invader_off_x)
+	add a, 24
+	add a, c
+	ld c, a
+	ld a, (last_invader_ref_y) 
+	sub a, e
+	ld e, a
+	pop af
+	ret
+
+get_curr_inv_coords:
+	push af
+	call get_relative_inv_pos
 	ld b, 0
 	ld d, 0
 	ld a, (invader_off_x)
@@ -449,7 +481,7 @@ invader_shoot:
 	call bottom_invader_in_column
 	cp $AA
 	jp z, @done
-	call get_inv_coords
+	call get_curr_inv_coords
 	ld a, c
 	add a, 7
 	ld (shot_pos_x), a
@@ -463,51 +495,85 @@ invader_shoot:
 	pop af
 	ret
 
-; A - bitmap
-; BC - X
-; DE - Y
-draw_invader_bmp:
-	push af
-	call draw_bitmap
-	pop af
-	ret
-	
-	
-; BC - X
-; DE - Y
-clear_invader_bmp:
-	push af
-	ld a, BMP_BLANK
-	call draw_bitmap
-	pop af
-	ret
-	
 
 ; A - index
 draw_invader:
-	if USE_SPRITES
-	; Sprite mode
-	call show_sprite
 	push bc
-	call get_inv_coords
-	call move_sprite
-	pop bc
-
-	else
-	
-	; Bitmap mode
-	push bc
+	push af
 	call get_inv_type
-	ld c, 1
+	push af
+	ld a, (invader_anim_frame)
+	add a, 1
+	ld c, a
 	ld b, 0
 	add hl, bc
-	call get_inv_coords
+	pop af
+	call get_curr_inv_coords
 	ld a, (hl)
-	call draw_invader_bmp
+	call draw_bitmap
+	pop af
 	pop bc
 	
+	ret
+
+; A - index	
+remove_invader:
+	push bc
+	push af
+	; call get_inv_type
+	; ld c, 1
+	; ld b, 0
+	; add hl, bc
+	call get_curr_inv_coords
+	ld a, BMP_BLANK
+	call draw_bitmap
+	pop af
+	pop bc
+	
+	ret
+
+; A - index	
+clear_invader:
+	push bc
+	push af
+	; call get_inv_type
+	; ld c, 1
+	; ld b, 0
+	; add hl, bc
+	call get_prev_inv_coords
+	ld a, BMP_BLANK
+	call draw_bitmap
+	pop af
+	pop bc
+	
+	ret
+	
+; A - index
+kill_invader:
+    ld hl, invaders				; Point to invaders status table
+    ld c, a						; Store invader cursor
+    ld b, 0						; Clear MSB
+    add hl, bc					; Point to this invader status
+    ld (hl), 1
+	if USE_SPRITES
+    call hide_sprite
+    call get_curr_inv_coords
+    ld a, (inv_explode_spr)
+    call move_sprite
+    call show_sprite
+	else
+	ld (exploding_inv), a
+	call remove_invader
+    call get_curr_inv_coords
+    ld a, BMP_INV_EXPLOSION
+	call draw_bitmap
 	endif
 
+    ld a, 2
+    ld (inv_exploding), a
+    ld a, $10
+    ld (inv_explode_time), a
+	
 	ret
 
 ; --------------------------------------
@@ -553,12 +619,20 @@ invader_col_pos_1:
 
 invader_cursor:
 	db 0
+	
+invader_anim_frame:
+	db 0
 
 invader_ref_y:
 	db 80
-	;db 120
 invader_off_x:
 	db 0
+
+last_invader_ref_y:
+	db 80
+last_invader_off_x:
+	db 0
+
 invader_direction:
 	db 2
 last_invader_x_pos:
@@ -569,6 +643,8 @@ should_swap:
 inv_exploding:
 	db 0
 inv_explode_time:
+	db 0
+exploding_inv:
 	db 0
 	
 inv_explode_spr:

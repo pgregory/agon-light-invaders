@@ -40,7 +40,6 @@ player_exp_sprite_data:
     
 
 init_player:
-    if USE_SPRITES
 	ld a, (next_sprite_index)
     ld (player_spr), a
 	ld hl, player_sprite_data	
@@ -59,7 +58,6 @@ init_player:
     add a, 1
 
     ld (next_sprite_index), a
-    endif
 
     ret
 
@@ -111,6 +109,9 @@ process_player:
     call move_sprite
     
 @check_fire:
+    ld a, (inv_exploding)
+    and a
+    jp nz, @move_bullet
     ld a, (keycode)
     cp KEY_FIRE
     jp nz, @move_bullet
@@ -210,22 +211,7 @@ process_player:
     cp 0x55 
     jp nc, @check_shields
 
-    ld hl, invaders				; Point to invaders status table
-    ld c, a						; Store invader cursor
-    ld b, 0						; Clear MSB
-    add hl, bc					; Point to this invader status
-    ld (hl), 1
-    call hide_sprite
-    
-    call get_inv_coords
-    ld a, (inv_explode_spr)
-    call move_sprite
-    call show_sprite
-
-    ld a, 2
-    ld (inv_exploding), a
-    ld a, $10
-    ld (inv_explode_time), a
+    call kill_invader
     
     jp @bullet_exited
 
