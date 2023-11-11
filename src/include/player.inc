@@ -155,17 +155,38 @@ process_player:
     ld d, 0
     call get_pixel_color
     
+    ld bc, 1
     ld hl, (pixel_data_ptr)
-    ld hl, (hl)
-    ld a, h
+    ld a, (hl)
+    add hl, bc
+    or a, (hl)
+    add hl, bc
+    or a, (hl)
     and a
     jp z, @done
     
     ; print pixel color 
-    ;push af
-	;call home_cursor
-	;call print_Hex16
-    ;pop af
+    push af
+    push bc
+    push hl
+    ld bc, 1
+	call home_cursor
+    ld hl, (pixel_data_ptr)
+    ld a, (hl)
+	call print_Hex8
+    ld hl, (pixel_data_ptr)
+    ld bc, 1
+    add hl, bc
+    ld a, (hl)
+	call print_Hex8
+    ld hl, (pixel_data_ptr)
+    ld bc, 2
+    add hl, bc
+    ld a, (hl)
+	call print_Hex8
+    pop hl
+    pop bc
+    pop af
 
 @check_inv:
     ; Check if hit an invader

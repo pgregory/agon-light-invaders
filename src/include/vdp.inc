@@ -54,6 +54,8 @@ VK_D: equ 152
 VK_L: equ 154
 VK_R: equ 156
 
+vdp_flags_ptr:
+	dl 0
 pixel_data_ptr:
 	dl 0
 screen_width_ptr:
@@ -63,6 +65,75 @@ screen_height_ptr:
 	
 next_sprite_index:
 	db 0
+	
+
+;; Init all VDP data
+vdp_init:
+	MOSCALL mos_sysvars
+	lea hl, ix+4
+	ld (vdp_flags_ptr), hl
+	lea hl, ix+5
+	ld (keycode_ptr), hl
+	lea hl, ix+$17
+	ld  (vk_code), hl
+	lea hl, ix+$18
+	ld (key_up), hl
+	lea hl, ix+$0a
+	ld (pixel_data_ptr), hl
+	lea hl, ix+$0f
+	ld (screen_width_ptr), hl
+	lea hl, ix+$11
+	ld (screen_height_ptr), hl
+
+	ld (frame_ptr), ix
+
+	ld hl, @cmd
+	ld bc, @end-@cmd
+	rst.lil $18
+	
+	ld a, 0
+	ld (next_sprite_index), a
+
+	ret
+
+@cmd:
+	db 22, 13 ;; Mode 141
+	db 23, 1, 0 ;; Hide cursor
+	db "Video mode established", 13, 10
+	db "Setting keyboard mode", 13,10
+	db "Sending bitmaps to VDP", 13, 10
+	db 23, 0, $88
+	dw 250, 33
+	db 255	
+	db 23, 0, $86    ; Get screen dimensions
+	db 23, 27, 16    ; Reset and clear sprites
+	db 23, 0, $C0, 0 ; Turn off logical screen coordinates.
+
+	DEFBMP BMP_INVADER1_1, 16, 16, "imgs/invader1_1.rgba"
+	DEFBMP BMP_INVADER1_2, 16, 16, "imgs/invader1_2.rgba"
+	DEFBMP BMP_INVADER2_1, 16, 16, "imgs/invader2_1.rgba"
+	DEFBMP BMP_INVADER2_2, 16, 16, "imgs/invader2_2.rgba"
+	DEFBMP BMP_INVADER3_1, 16, 16, "imgs/invader3_1.rgba"
+	DEFBMP BMP_INVADER3_2, 16, 16, "imgs/invader3_2.rgba"
+	DEFBMP BMP_SAUCER, 16, 16, "imgs/saucer.rgba"
+	DEFBMP BMP_SHIELD, 22, 16, "imgs/shield.rgba"
+	DEFBMP BMP_LINE, 16, 1, "imgs/line.rgba"
+	DEFBMP BMP_PLAYER, 16, 8, "imgs/player.rgba"
+	DEFBMP BMP_BULLET, 1, 4, "imgs/bullet.rgba"
+	DEFBMP BMP_BLANK, 16, 16, "imgs/blank_invader.rgba"
+	DEFBMP BMP_INV_EXPLOSION, 16, 16, "imgs/alien_explosion.rgba"
+	DEFBMP BMP_PLYR_B_EXPL, 8, 8, "imgs/plyr_b_expl.rgba"
+	DEFBMP BMP_INV_SHOT_F1, 3, 8, "imgs/invader_shot_f1.rgba"
+	DEFBMP BMP_INV_SHOT_F2, 3, 8, "imgs/invader_shot_f2.rgba"
+	DEFBMP BMP_INV_SHOT_F3, 3, 8, "imgs/invader_shot_f3.rgba"
+	DEFBMP BMP_INV_SHOT_F4, 3, 8, "imgs/invader_shot_f4.rgba"
+	DEFBMP BMP_PLAYER_EXP1, 16, 8, "imgs/player_exp1.rgba"
+	DEFBMP BMP_PLAYER_EXP2, 16, 8, "imgs/player_exp2.rgba"
+	db 12
+@end:	
+
+
+	
 
 vk_down:
 	ld hl, (vk_code)
@@ -142,70 +213,6 @@ vsync:
 	cp (hl)
 	jr z, @wait
 	ret
-
-;; Inits screen
-vdp_init:
-	MOSCALL mos_sysvars
-	lea hl, ix+5
-	ld (keycode_ptr), hl
-	lea hl, ix+$17
-	ld  (vk_code), hl
-	lea hl, ix+$18
-	ld (key_up), hl
-	lea hl, ix+$0a
-	ld (pixel_data_ptr), hl
-	lea hl, ix+$0f
-	ld (screen_width_ptr), hl
-	lea hl, ix+$11
-	ld (screen_height_ptr), hl
-
-	ld (frame_ptr), ix
-
-	ld hl, @cmd
-	ld bc, @end-@cmd
-	rst.lil $18
-	
-	ld a, 0
-	ld (next_sprite_index), a
-
-	ret
-
-@cmd:
-	db 22, 13 ;; Mode 1
-	db 23, 1, 0 ;; Hide cursor
-	db "Video mode established", 13, 10
-	db "Setting keyboard mode", 13,10
-	db "Sending bitmaps to VDP", 13, 10
-	db 23, 0, $88
-	dw 250, 33
-	db 255	
-	db 23, 0, $86    ; Get screen dimensions
-	db 23, 27, 16    ; Reset and clear sprites
-	db 23, 0, $C0, 0 ; Turn off logical screen coordinates.
-
-	DEFBMP BMP_INVADER1_1, 16, 16, "imgs/invader1_1.rgba"
-	DEFBMP BMP_INVADER1_2, 16, 16, "imgs/invader1_2.rgba"
-	DEFBMP BMP_INVADER2_1, 16, 16, "imgs/invader2_1.rgba"
-	DEFBMP BMP_INVADER2_2, 16, 16, "imgs/invader2_2.rgba"
-	DEFBMP BMP_INVADER3_1, 16, 16, "imgs/invader3_1.rgba"
-	DEFBMP BMP_INVADER3_2, 16, 16, "imgs/invader3_2.rgba"
-	DEFBMP BMP_SAUCER, 16, 16, "imgs/saucer.rgba"
-	DEFBMP BMP_SHIELD, 22, 16, "imgs/shield.rgba"
-	DEFBMP BMP_LINE, 16, 1, "imgs/line.rgba"
-	DEFBMP BMP_PLAYER, 16, 8, "imgs/player.rgba"
-	DEFBMP BMP_BULLET, 1, 4, "imgs/bullet.rgba"
-	DEFBMP BMP_BLANK, 16, 16, "imgs/blank_invader.rgba"
-	DEFBMP BMP_INV_EXPLOSION, 16, 16, "imgs/alien_explosion.rgba"
-	DEFBMP BMP_PLYR_B_EXPL, 8, 8, "imgs/plyr_b_expl.rgba"
-	DEFBMP BMP_INV_SHOT_F1, 3, 8, "imgs/invader_shot_f1.rgba"
-	DEFBMP BMP_INV_SHOT_F2, 3, 8, "imgs/invader_shot_f2.rgba"
-	DEFBMP BMP_INV_SHOT_F3, 3, 8, "imgs/invader_shot_f3.rgba"
-	DEFBMP BMP_INV_SHOT_F4, 3, 8, "imgs/invader_shot_f4.rgba"
-	DEFBMP BMP_PLAYER_EXP1, 16, 8, "imgs/player_exp1.rgba"
-	DEFBMP BMP_PLAYER_EXP2, 16, 8, "imgs/player_exp2.rgba"
-	db 12
-@end:	
-
 
 ;; Clear screen
 vdp_cls:
@@ -578,11 +585,18 @@ get_pixel_color:
 	push hl
 	push bc
 	push de
+
+	ld hl, (vdp_flags_ptr)
+	res.lil 2, (hl)
 	ld (@x), bc
 	ld (@y), de
 	ld hl, @cmd
 	ld bc, @end-@cmd
 	rst.lil $18
+	ld hl, (vdp_flags_ptr)
+@wait:
+	bit.lil 2, (hl)
+	jr z, @wait
 	pop de
 	pop bc
 	pop hl

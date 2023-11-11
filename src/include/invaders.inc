@@ -177,16 +177,6 @@ update_invader_shots:
     call move_sprite
 	call next_frame_sprite		; Animate sprite frame
 
-	; push hl
-    ; push af
-	; call home_cursor
-    ; ld a, '-'
-    ; PRT_CHR
-    ; ld a, '-'
-    ; PRT_CHR
-    ; pop af
-	; pop hl
-
     ld a, (shot_pos_x)
 	add a, 1
     ld c, a
@@ -199,7 +189,6 @@ update_invader_shots:
     
     ld hl, (pixel_data_ptr)
     ld hl, (hl)
-
     ld a, h
     and a
     jp z, @done
@@ -587,3 +576,11 @@ inv_explode_spr:
 
 inv_shot_spr:
 	db 0
+
+
+shot_pos_x:
+    db 0
+shot_pos_y:
+    db 0
+shot_active:
+    db 0

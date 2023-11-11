@@ -95,13 +95,6 @@ delay:
 
 	
 
-shot_pos_x:
-    db $40
-shot_pos_y:
-    db BULLET_START_YPOS
-shot_active:
-    db 1
-
 bottom_line:
 	dw 8
 	dw 180
