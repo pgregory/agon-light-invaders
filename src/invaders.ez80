@@ -1,6 +1,5 @@
 ; Assembly control flags
 DEBUG: equ 0
-USE_SPRITES: equ 0
 
 MAX_ARGS:	equ 1
 	include "include/crt.inc"
@@ -137,3 +136,45 @@ title:
 	db 31, 30, 19
 	db "03"
 title_end:
+
+
+
+vdp_data:
+	db 22, 13 ;; Mode 141
+	db 23, 1, 0 ;; Hide cursor
+	db "Video mode established", 13, 10
+	db "Setting keyboard mode", 13,10
+	db "Sending bitmaps to VDP", 13, 10
+	db 23, 0, $88
+	dw 250, 33
+	db 255	
+	db 23, 0, $86    ; Get screen dimensions
+	db 23, 27, 16    ; Reset and clear sprites
+	db 23, 0, $C0, 0 ; Turn off logical screen coordinates.
+
+	DEFBMP BMP_INVADER1_1, 16, 16, "imgs/invader1_1.rgba"
+	DEFBMP BMP_INVADER1_2, 16, 16, "imgs/invader1_2.rgba"
+	DEFBMP BMP_INVADER2_1, 16, 16, "imgs/invader2_1.rgba"
+	DEFBMP BMP_INVADER2_2, 16, 16, "imgs/invader2_2.rgba"
+	DEFBMP BMP_INVADER3_1, 16, 16, "imgs/invader3_1.rgba"
+	DEFBMP BMP_INVADER3_2, 16, 16, "imgs/invader3_2.rgba"
+	DEFBMP BMP_SAUCER, 16, 16, "imgs/saucer.rgba"
+	DEFBMP BMP_SHIELD, 22, 16, "imgs/shield.rgba"
+	DEFBMP BMP_LINE, 16, 1, "imgs/line.rgba"
+	DEFBMP BMP_PLAYER, 16, 8, "imgs/player.rgba"
+	DEFBMP BMP_BULLET, 1, 4, "imgs/bullet.rgba"
+	DEFBMP BMP_BLANK, 16, 16, "imgs/blank_invader.rgba"
+	DEFBMP BMP_INV_EXPLOSION, 16, 16, "imgs/alien_explosion.rgba"
+	DEFBMP BMP_PLYR_B_EXPL, 8, 8, "imgs/plyr_b_expl.rgba"
+	DEFBMP BMP_INV_SHOT_F1, 3, 8, "imgs/invader_shot_f1.rgba"
+	DEFBMP BMP_INV_SHOT_F2, 3, 8, "imgs/invader_shot_f2.rgba"
+	DEFBMP BMP_INV_SHOT_F3, 3, 8, "imgs/invader_shot_f3.rgba"
+	DEFBMP BMP_INV_SHOT_F4, 3, 8, "imgs/invader_shot_f4.rgba"
+	DEFBMP BMP_PLAYER_EXP1, 16, 8, "imgs/player_exp1.rgba"
+	DEFBMP BMP_PLAYER_EXP2, 16, 8, "imgs/player_exp2.rgba"
+	DEFWAV -1, 5547, "audio/player_shoot.pcm" ; Length 5547
+	
+	db 23, 0, $85, 1, 4, -1
+
+	db 12
+vdp_data_end:	

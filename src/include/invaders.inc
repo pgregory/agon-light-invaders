@@ -8,23 +8,14 @@ init_invaders:
 	ld a, (next_sprite_index) ; Sprite index
 	ld b, 55 ; Number of invaders
 @inv_def_loop:
-	if USE_SPRITES
-	call get_inv_type
-	call def_sprite
-	endif
-
 	ld hl, invaders
+	ld.l de, 0
 	ld e, a
-	ld d, 0
 	add hl, de
 	ld a, (hl)	; Get invader state variable
 	and a
 	ld a, e
 	jp z, @done
-
-	if USE_SPRITES
-	call show_sprite
-	endif
 
 @done:
 	add a, 1
@@ -53,7 +44,6 @@ init_invaders:
 	ret
 	
 
-
 update_invaders:
 	push af
 	push bc
@@ -77,13 +67,8 @@ update_invaders:
 	call get_curr_inv_coords	; Get invader coords BC, HL
 	ld (last_invader_x_pos), bc	; Store X for boundary check
 
-	if USE_SPRITES
-	call move_sprite			; Move sprite into position
-	call next_frame_sprite		; Animate sprite frame
-	else
 	call clear_invader
 	call draw_invader
-	endif
 
 	ld hl, (last_invader_x_pos)	; Check boundary conditions
 	ld a, l
@@ -145,13 +130,8 @@ update_invaders:
 	dec (hl)
 	jp nz, @next
 	
-	if USE_SPRITES
-	ld a, (inv_explode_spr)
-	call hide_sprite
-	else
 	ld a, (exploding_inv)
 	call remove_invader
-	endif
 	
 	ld a, 0
 	ld (inv_exploding), a
@@ -555,19 +535,11 @@ kill_invader:
     ld b, 0						; Clear MSB
     add hl, bc					; Point to this invader status
     ld (hl), 1
-	if USE_SPRITES
-    call hide_sprite
-    call get_curr_inv_coords
-    ld a, (inv_explode_spr)
-    call move_sprite
-    call show_sprite
-	else
 	ld (exploding_inv), a
 	call remove_invader
     call get_curr_inv_coords
     ld a, BMP_INV_EXPLOSION
 	call draw_bitmap
-	endif
 
     ld a, 2
     ld (inv_exploding), a

@@ -1,44 +1,3 @@
-
-KEY_LEFT: equ 8
-KEY_RIGHT: equ 21
-KEY_FIRE: equ 32
-PLAYER_YPOS: equ 165
-BULLET_START_YPOS: equ 160
-
-
-player_spr:
-    db 0
-bullet_spr:
-    db 0
-player_exp_spr:
-    db 0
-
-player_position: 
-    db 35
-    
-bullet_pos_x:
-    db 0
-bullet_pos_y:
-    db BULLET_START_YPOS
-bullet_active:
-    db 0
-
-player_exploding:
-	db 0
-player_explode_time:
-	db 0
-player_explode_counter:
-    db 0
-    
-player_sprite_data:
-	db 1, BMP_PLAYER
-bullet_sprite_data:
-	db 1, BMP_BULLET
-player_exp_sprite_data:
-    db 2, BMP_PLAYER_EXP1, BMP_PLAYER_EXP2
-
-    
-
 init_player:
 	ld a, (next_sprite_index)
     ld (player_spr), a
@@ -119,6 +78,9 @@ process_player:
     ld a, (bullet_active)
     and a
     jp nz, @move_bullet
+
+    ld a, 1
+    call play_channel
     
     ld a, (bullet_spr)
     ld (bullet_active), a
@@ -299,3 +261,72 @@ explode_player:
     pop af
     
     ret
+
+; A - channel
+test:
+	push af
+	push hl
+	push bc
+	push de
+	ld (@channel), a
+	ld hl, @cmd
+	ld bc, @end-@cmd
+	rst.lil $18
+	pop de
+	pop bc
+	pop hl
+	pop af
+	ret
+
+@cmd:
+	db 23, 0, $85
+@channel:
+	db 0
+	db 0
+	db 127
+	dw 16000
+	dw 310
+@end:
+
+
+
+    
+KEY_LEFT: equ 8
+KEY_RIGHT: equ 21
+KEY_FIRE: equ 32
+PLAYER_YPOS: equ 165
+BULLET_START_YPOS: equ 160
+
+
+player_spr:
+    db 0
+bullet_spr:
+    db 0
+player_exp_spr:
+    db 0
+
+player_position: 
+    db 35
+    
+bullet_pos_x:
+    db 0
+bullet_pos_y:
+    db BULLET_START_YPOS
+bullet_active:
+    db 0
+
+player_exploding:
+	db 0
+player_explode_time:
+	db 0
+player_explode_counter:
+    db 0
+    
+player_sprite_data:
+	db 1, BMP_PLAYER
+bullet_sprite_data:
+	db 1, BMP_BULLET
+player_exp_sprite_data:
+    db 2, BMP_PLAYER_EXP1, BMP_PLAYER_EXP2
+
+    
