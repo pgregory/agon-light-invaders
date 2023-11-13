@@ -67,7 +67,6 @@ update_invaders:
 	call get_curr_inv_coords	; Get invader coords BC, HL
 	ld (last_invader_x_pos), bc	; Store X for boundary check
 
-	call clear_invader
 	call draw_invader
 
 	ld hl, (last_invader_x_pos)	; Check boundary conditions
@@ -131,7 +130,7 @@ update_invaders:
 	jp nz, @next
 	
 	ld a, (exploding_inv)
-	call remove_invader
+	call remove_explosion
 	
 	ld a, 0
 	ld (inv_exploding), a
@@ -272,9 +271,9 @@ bottom_invader_in_column:
 	ret
 
 	
-; A - index
-; Returns BC - X, DE - Y  relative to reference alien
-get_relative_inv_pos:
+get_curr_inv_coords:
+	push af
+
 	ld c, 0 ; X ref
 	ld e, 0 ; Y ref
 @row_loop:
@@ -299,36 +298,39 @@ get_relative_inv_pos:
 	dec a
 	jp @col_loop
 @at_col:
-	ret
 
-
-get_prev_inv_coords:
-	push af
-	call get_relative_inv_pos
-	ld b, 0
-	ld d, 0
-	ld a, (last_invader_off_x)
-	add a, 24
-	add a, c
-	ld c, a
-	ld a, (last_invader_ref_y) 
-	sub a, e
-	ld e, a
 	pop af
-	ret
-
-get_curr_inv_coords:
 	push af
-	call get_relative_inv_pos
-	ld b, 0
-	ld d, 0
+	push bc
+	ld c, a
+	ld a, (invader_cursor)
+	cp c
+	pop bc
+	jr c, @prev
+
 	ld a, (invader_off_x)
 	add a, 24
 	add a, c
 	ld c, a
 	ld a, (invader_ref_y) 
 	sub a, e
+	jr @done
+	
+@prev:
+	ld a, (last_invader_off_x)
+	add a, 24
+	add a, c
+	ld c, a
+	ld a, (last_invader_ref_y) 
+	sub a, e
+
+@done:
+	; Move up by 4 to account for black space for wiping
+	sub a, 4
 	ld e, a
+	ld b, 0
+	ld d, 0
+
 	pop af
 	ret
   
@@ -497,14 +499,10 @@ draw_invader:
 	ret
 
 ; A - index	
-remove_invader:
+remove_explosion:
 	push bc
 	push af
-	; call get_inv_type
-	; ld c, 1
-	; ld b, 0
-	; add hl, bc
-	call get_curr_inv_coords
+    call get_curr_inv_coords
 	ld a, BMP_BLANK
 	call draw_bitmap
 	pop af
@@ -512,21 +510,6 @@ remove_invader:
 	
 	ret
 
-; A - index	
-clear_invader:
-	push bc
-	push af
-	; call get_inv_type
-	; ld c, 1
-	; ld b, 0
-	; add hl, bc
-	call get_prev_inv_coords
-	ld a, BMP_BLANK
-	call draw_bitmap
-	pop af
-	pop bc
-	
-	ret
 	
 ; A - index
 kill_invader:
@@ -535,9 +518,26 @@ kill_invader:
     ld b, 0						; Clear MSB
     add hl, bc					; Point to this invader status
     ld (hl), 1
+	
+	; Which position to get depends on whether the
+	; cursor has reached the killed invader yet or not.
 	ld (exploding_inv), a
-	call remove_invader
+	ld c, a
+	ld a, (invader_cursor)
+	cp c
+	jr c, @get_prev
+
+	ld a, c
     call get_curr_inv_coords
+	jr @draw_explosion
+
+@get_prev:
+	ld a, c
+    call get_curr_inv_coords
+
+@draw_explosion:
+	ld a, BMP_BLANK
+	call draw_bitmap
     ld a, BMP_INV_EXPLOSION
 	call draw_bitmap
 
