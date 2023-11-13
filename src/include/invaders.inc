@@ -538,7 +538,7 @@ count_invaders:
 @loop:
 	ld a, (hl)
 	and a
-	jr z, @next
+	jr nz, @next
 	inc c
 @next:
 	inc hl
@@ -574,9 +574,19 @@ play_fleet_sound:
 	ld de, 73
 	call play_channel
 
-	ld a, $34
-	ld hl, fleet_sound_timer
-	ld (hl), a
+	ld hl, fleet_sound_alien_counts
+	ld de, fleet_sound_delays
+	ld a, (invader_count)
+@loop:
+	cp (hl)
+	jr nc, @store_delay
+	inc hl
+	inc de
+	jr @loop
+
+@store_delay:
+	ld a, (de)
+	ld (fleet_sound_timer), a
 	
 @done:
 	; Should turn fleet sound off.
@@ -671,6 +681,10 @@ shot_active:
     db 0
 	
 fleet_sound_timer:
-	db $34
+	db $01
 fleet_sound:
 	db 0
+fleet_sound_alien_counts:
+	db $32, $2B, $24, $1C, $16, $11, $0D, $0A, $08, $07, $06, $05, $04, $03, $02, $01
+fleet_sound_delays:
+	db $34, $2E, $27, $22, $1C, $18, $15, $13, $10, $0E, $0D, $0C, $0B, $09, $07, $05
