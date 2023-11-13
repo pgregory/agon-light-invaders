@@ -518,26 +518,8 @@ kill_invader:
     ld b, 0						; Clear MSB
     add hl, bc					; Point to this invader status
     ld (hl), 1
-	
-	; Which position to get depends on whether the
-	; cursor has reached the killed invader yet or not.
 	ld (exploding_inv), a
-	ld c, a
-	ld a, (invader_cursor)
-	cp c
-	jr c, @get_prev
-
-	ld a, c
     call get_curr_inv_coords
-	jr @draw_explosion
-
-@get_prev:
-	ld a, c
-    call get_curr_inv_coords
-
-@draw_explosion:
-	ld a, BMP_BLANK
-	call draw_bitmap
     ld a, BMP_INV_EXPLOSION
 	call draw_bitmap
 
@@ -547,6 +529,59 @@ kill_invader:
     ld (inv_explode_time), a
 	
 	ret
+	
+	
+;
+count_invaders:
+	ld hl, invaders
+	ld.s bc, $3700
+@loop:
+	ld a, (hl)
+	and a
+	jr z, @next
+	inc c
+@next:
+	inc hl
+	dec b
+	jr nz, @loop
+	ld a, c
+	ld (invader_count), a
+	ret
+	
+
+play_fleet_sound:
+	ld hl, fleet_sound_timer
+	dec (hl)
+	jr nz, @done	
+	
+	; Choose from the 4 sounds
+	ld hl, fleet_sound
+	inc (hl)
+	ld a, (hl)
+	cp 4
+	jr c, @play_sound
+	ld a, 0
+	ld (hl), a
+
+@play_sound:
+	inc a	
+	inc a	
+	neg
+	
+	; Play sound and reset timer
+	ld b, a
+	ld a, 2
+	ld de, 73
+	call play_channel
+
+	ld a, $34
+	ld hl, fleet_sound_timer
+	ld (hl), a
+	
+@done:
+	; Should turn fleet sound off.
+	ret
+	
 
 ; --------------------------------------
 
@@ -573,11 +608,11 @@ invaders:
 	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
 	; Test set with some invaders killed
-	db 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
-	db 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
-	db 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0
-	db 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0
-	db 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1
+	; db 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+	; db 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+	; db 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0
+	; db 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0
+	; db 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1
 
 	
 invader_col_fire_table:
@@ -590,6 +625,8 @@ invader_col_pos_1:
 	db 6
 
 invader_cursor:
+	db 0
+invader_count:
 	db 0
 	
 invader_anim_frame:
@@ -632,3 +669,8 @@ shot_pos_y:
     db 0
 shot_active:
     db 0
+	
+fleet_sound_timer:
+	db $34
+fleet_sound:
+	db 0

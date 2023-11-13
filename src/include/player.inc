@@ -79,7 +79,10 @@ process_player:
     and a
     jp nz, @move_bullet
 
+    ld a, -1
+    ld b, a
     ld a, 1
+    ld de, 310
     call play_channel
     
     ld a, (bullet_spr)

@@ -577,12 +577,18 @@ get_pixel_color:
 
 
 ; A - channel
+; B - sample
+; DE - duration
 play_channel:
 	push af
 	push hl
 	push bc
 	push de
 	ld (@channel), a
+	ld (@channel1), a
+	ld a, b
+	ld (@sample), a
+	ld.s (@duration), de
 	ld hl, @cmd
 	ld bc, @end-@cmd
 	rst.lil $18
@@ -595,10 +601,16 @@ play_channel:
 @cmd:
 	db 23, 0, $85
 @channel:
+	db 1
+	db 4
+@sample:
+	db -1
+	db 23, 0, $85
+@channel1:
 	db 0
-	db 0
-	db 127
-	dw 16000
+	db 0, 127
+	dw 16000 
+@duration:
 	dw 310
 @end:
 

@@ -52,6 +52,7 @@ _main:
 
 @loop:
 	call delay 
+	call count_invaders
 	call update_invaders
 	call update_invader_shots
 
@@ -59,6 +60,7 @@ _main:
 
 	call process_player
 	call update_gui
+	call play_fleet_sound
 
 	ld a, (keycode)
 
@@ -172,9 +174,11 @@ vdp_data:
 	DEFBMP BMP_INV_SHOT_F4, 3, 8, "imgs/invader_shot_f4.rgba"
 	DEFBMP BMP_PLAYER_EXP1, 16, 8, "imgs/player_exp1.rgba"
 	DEFBMP BMP_PLAYER_EXP2, 16, 8, "imgs/player_exp2.rgba"
-	DEFWAV -1, 5547, "audio/player_shoot.pcm" ; Length 5547
+	DEFWAV -1, 5547, "audio/player_shoot.pcm"	; Length 5547
+	DEFWAV -2, 1174, "audio/fleet1.pcm"			; Length 1174
+	DEFWAV -3, 1052, "audio/fleet2.pcm"			; Length 1052
+	DEFWAV -4, 1107, "audio/fleet3.pcm"			; Length 1107
+	DEFWAV -5, 1187, "audio/fleet4.pcm"			; Length 1187
 	
-	db 23, 0, $85, 1, 4, -1
-
 	db 12
 vdp_data_end:	
