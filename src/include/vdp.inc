@@ -95,8 +95,16 @@ vdp_init:
 
 	ld (frame_ptr), ix
 
-	ld hl, vdp_data
-	ld bc, vdp_data_end-vdp_data
+	ld hl, vdp_init_1
+	ld bc, vdp_init_1_end-vdp_init_1
+	rst.lil $18
+
+	ld hl, vdp_init_2
+	ld bc, vdp_init_2_end-vdp_init_2
+	rst.lil $18
+
+	ld hl, vdp_init_3
+	ld bc, vdp_init_3_end-vdp_init_3
 	rst.lil $18
 	
 	ld a, 0
@@ -397,8 +405,14 @@ move_sprite:
 	push bc
 	push de
 	ld (@spr), a
-	ld.s (@c_x), bc
-	ld.s (@c_y), de
+	ld a, c
+	ld (@c_x), a
+	ld a, b
+	ld (@c_x + 1), a
+	ld a, e
+	ld (@c_y), a
+	ld a, d
+	ld (@c_y + 1), a
 	ld hl, @cmd
 	ld bc, @end-@cmd
 	rst.lil $18
@@ -481,8 +495,14 @@ draw_bitmap:
 	push bc
 	push de
 	ld (@bitmap), a
-	ld.s (@x), bc
-	ld.s (@y), de
+	ld a, c
+	ld (@x), a
+	ld a, b
+	ld (@x + 1), a
+	ld a, e
+	ld (@y), a
+	ld a, d
+	ld (@y + 1), a
 	ld hl, @cmd
 	ld bc, @end-@cmd
 	rst.lil $18
@@ -497,9 +517,9 @@ draw_bitmap:
 	db 0
 	db 23, 27, 3
 @x:
-	dw 0 
+	dw $FFFF
 @y:
-	dw 0
+	dw $FFFF
 @end:
 
 
@@ -511,14 +531,22 @@ draw_line:
 	push bc
 	push de
 	ld (@color), a
-	ld bc, (ix)
-	ld.s (@x1), bc
-	ld bc, (ix + 2)
-	ld.s (@y1), bc
-	ld bc, (ix + 4)
-	ld.s (@x2), bc
-	ld bc, (ix + 6)
-	ld.s (@y2), bc
+	ld a, (ix)
+	ld (@x1), a
+	ld a, (ix + 1)
+	ld (@x1 + 1), a
+	ld a, (ix + 2)
+	ld (@y1), a
+	ld a, (ix + 3)
+	ld (@y1 + 1), a
+	ld a, (ix + 4)
+	ld (@x2), a
+	ld a, (ix + 5)
+	ld (@x2 + 1), a
+	ld a, (ix + 6)
+	ld (@y2), a
+	ld a, (ix + 7)
+	ld (@y2 + 1), a
 	ld hl, @cmd
 	ld bc, @end-@cmd
 	rst.lil $18
@@ -548,14 +576,21 @@ draw_line:
 ; BC - X
 ; DE - Y
 get_pixel_color:
+	push af
 	push hl
 	push bc
 	push de
 
 	ld hl, (vdp_flags_ptr)
 	res.lil 2, (hl)
-	ld.s (@x), bc
-	ld.s (@y), de
+	ld a, c
+	ld (@x), a
+	ld a, b
+	ld (@x + 1), a
+	ld a, e
+	ld (@y), a
+	ld a, d
+	ld (@y + 1), a
 	ld hl, @cmd
 	ld bc, @end-@cmd
 	rst.lil $18
@@ -566,6 +601,7 @@ get_pixel_color:
 	pop de
 	pop bc
 	pop hl
+	pop af
 	ret
 @cmd:
 	db 23, 0, $84
@@ -588,7 +624,10 @@ play_channel:
 	ld (@channel1), a
 	ld a, b
 	ld (@sample), a
-	ld.s (@duration), de
+	ld a, e
+	ld (@duration), a
+	ld a, d
+	ld (@duration + 1), a
 	ld hl, @cmd
 	ld bc, @end-@cmd
 	rst.lil $18
@@ -614,3 +653,49 @@ play_channel:
 	dw 310
 @end:
 
+
+vdp_init_1:
+	db 22, 13 ; Mode 13
+	db 23, 1, 0 ; Hide cursor
+	db "Video mode established", 13, 10
+	db "Setting keyboard mode", 13,10
+	db "Sending bitmaps to VDP", 13, 10
+	db 23, 0, $88
+	dw 250, 33
+	db 255	
+	db 23, 0, $86    ; Get screen dimensions
+	db 23, 27, 16    ; Reset and clear sprites
+	db 23, 0, $C0, 0 ; Turn off logical screen coordinates.
+	db 12
+vdp_init_1_end:
+
+vdp_init_2:
+	DEFBMP BMP_INVADER1_1, 16, 20, "imgs/invader1_1.rgba"
+	DEFBMP BMP_INVADER1_2, 16, 20, "imgs/invader1_2.rgba"
+	DEFBMP BMP_INVADER2_1, 16, 20, "imgs/invader2_1.rgba"
+	DEFBMP BMP_INVADER2_2, 16, 20, "imgs/invader2_2.rgba"
+	DEFBMP BMP_INVADER3_1, 16, 20, "imgs/invader3_1.rgba"
+	DEFBMP BMP_INVADER3_2, 16, 20, "imgs/invader3_2.rgba"
+	DEFBMP BMP_SAUCER, 16, 16, "imgs/saucer.rgba"
+	DEFBMP BMP_SHIELD, 22, 16, "imgs/shield.rgba"
+	DEFBMP BMP_LINE, 16, 1, "imgs/line.rgba"
+	DEFBMP BMP_PLAYER, 16, 8, "imgs/player.rgba"
+	DEFBMP BMP_BULLET, 1, 4, "imgs/bullet.rgba"
+	DEFBMP BMP_BLANK, 16, 20, "imgs/blank_invader.rgba"
+	DEFBMP BMP_INV_EXPLOSION, 16, 20, "imgs/alien_explosion.rgba"
+	DEFBMP BMP_PLYR_B_EXPL, 8, 8, "imgs/plyr_b_expl.rgba"
+	DEFBMP BMP_INV_SHOT_F1, 3, 8, "imgs/invader_shot_f1.rgba"
+	DEFBMP BMP_INV_SHOT_F2, 3, 8, "imgs/invader_shot_f2.rgba"
+	DEFBMP BMP_INV_SHOT_F3, 3, 8, "imgs/invader_shot_f3.rgba"
+	DEFBMP BMP_INV_SHOT_F4, 3, 8, "imgs/invader_shot_f4.rgba"
+	DEFBMP BMP_PLAYER_EXP1, 16, 8, "imgs/player_exp1.rgba"
+	DEFBMP BMP_PLAYER_EXP2, 16, 8, "imgs/player_exp2.rgba"
+vdp_init_2_end:
+
+vdp_init_3:
+	DEFWAV -1, 5547, "audio/player_shoot.pcm"	; Length 5547
+	DEFWAV -2, 1174, "audio/fleet1.pcm"			; Length 1174
+	DEFWAV -3, 1052, "audio/fleet2.pcm"			; Length 1052
+	DEFWAV -4, 1107, "audio/fleet3.pcm"			; Length 1107
+	DEFWAV -5, 1187, "audio/fleet4.pcm"			; Length 1187
+vdp_init_3_end:

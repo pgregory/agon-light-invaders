@@ -5,7 +5,7 @@ init_invaders:
 	push bc
 	push de
 	
-	ld a, (next_sprite_index) ; Sprite index
+	ld a, 0
 	ld b, 55 ; Number of invaders
 @inv_def_loop:
 	ld hl, invaders
@@ -14,25 +14,16 @@ init_invaders:
 	add hl, de
 	ld a, (hl)	; Get invader state variable
 	and a
+	ld (hl), a
 	ld a, e
-	jp z, @done
-
-@done:
 	add a, 1
 	djnz @inv_def_loop
 	
-	ld (inv_explode_spr), a
-	ld hl, inv_explosion_sprite_data
-	call def_sprite
-	call hide_sprite
-
-	add a, 1
-
+	ld a, (next_sprite_index) ; Sprite index
 	ld (inv_shot_spr), a
 	ld hl, inv_shot_sprite_data
 	call def_sprite
-	;call hide_sprite
-	call show_sprite
+	call hide_sprite
 	
 	add a, 1
 	ld (next_sprite_index), a
@@ -67,7 +58,11 @@ update_invaders:
 	call get_curr_inv_coords	; Get invader coords BC, HL
 	ld (last_invader_x_pos), bc	; Store X for boundary check
 
-	call draw_invader
+	call get_inv_type
+	ld a, (hl)
+	ld hl, invader_anim_frame
+	add a, (hl)
+	call draw_bitmap
 
 	ld hl, (last_invader_x_pos)	; Check boundary conditions
 	ld a, l
@@ -77,16 +72,11 @@ update_invaders:
 	jp c, @step
 
 @do_swap:
-	;ld hl, (last_invader_x_pos)	; Print coord triggering swap
-	;call home_cursor
-	;call print_Hex16
-
 	ld a, 1						; Flag a swap at the end of this rack move
 	ld (should_swap), a
 	jp @step
 
 @hide:
-	call hide_sprite			; Hide the current invader
 	inc a						; Check the next one...
 	ld (invader_cursor), a
 	cp 55
@@ -147,10 +137,14 @@ update_invader_shots:
 	push bc
 	push hl
 
-	;ld a, (shot_active)
-	;and a
-	;jp z, @done
+	ld a, (shot_active)
+	and a
+	jp nz, @doit
 	
+	call invader_shoot
+	jp @done
+	
+@doit:
     ld a, (shot_pos_y)
     add a, 1
 	cp $F0
@@ -225,6 +219,8 @@ update_invader_shots:
     call draw_bitmap
     
 @shot_exited:
+	ld a, 0
+	ld (shot_active), a
 	call invader_shoot
 
 @done:
@@ -271,6 +267,7 @@ bottom_invader_in_column:
 	ret
 
 	
+; A - index
 get_curr_inv_coords:
 	push af
 
@@ -333,6 +330,7 @@ get_curr_inv_coords:
 
 	pop af
 	ret
+
   
 ; BC - X
 ; DE - Y 
@@ -392,12 +390,10 @@ get_inv_at:
 	pop de
 	pop bc
 	ret
-
-
-
+	
 
 ; A - index
-; Returns HL - sprite def
+; Returns HL - bitmap list
 get_inv_type:
 	push af
 	push bc
@@ -411,15 +407,15 @@ get_inv_type:
 @at_row:
 	ld a, c
 	and 0xfe
-	rlca
 	ld c, a
 	ld b, 0
-	ld hl, invader1
+	ld hl, invader_bitmaps
 	add hl, bc
 	pop bc
 	pop af
 	ret
 
+; A - index
 swap_rack_direction:
 	ld a, (invader_direction)
 	or a
@@ -437,7 +433,6 @@ swap_rack_direction:
 	ret
 
 	
-
 invader_shoot:
 	push af
 	push bc
@@ -470,6 +465,10 @@ invader_shoot:
 	ld a, e
 	add a, 11
 	ld (shot_pos_y), a
+	ld a, 1
+	ld (shot_active), a
+	ld a, (inv_shot_spr)
+	call show_sprite
 	
 @done:
 	pop hl
@@ -482,16 +481,12 @@ invader_shoot:
 draw_invader:
 	push bc
 	push af
-	call get_inv_type
-	push af
-	ld a, (invader_anim_frame)
-	add a, 1
-	ld c, a
-	ld b, 0
-	add hl, bc
-	pop af
 	call get_curr_inv_coords
+	call get_inv_type
 	ld a, (hl)
+	ld c, a
+	ld a, (invader_anim_frame)
+	add a, c
 	call draw_bitmap
 	pop af
 	pop bc
@@ -595,17 +590,13 @@ play_fleet_sound:
 
 ; --------------------------------------
 
-invader1:
-	db 2, 0, 1,     0
-	db 2, 2, 3,     0
-	db 2, 4, 5,     0
+invader_bitmaps:
+	db BMP_INVADER1_1, BMP_INVADER1_2
+	db BMP_INVADER2_1, BMP_INVADER2_2
+	db BMP_INVADER3_1, BMP_INVADER3_2
 
 animation_frame:
 	db 0
-	
-	
-inv_explosion_sprite_data:
-	db 1, BMP_INV_EXPLOSION
 	
 inv_shot_sprite_data:
 	db 4, BMP_INV_SHOT_F1, BMP_INV_SHOT_F2, BMP_INV_SHOT_F3, BMP_INV_SHOT_F4
@@ -617,14 +608,6 @@ invaders:
 	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
-	; Test set with some invaders killed
-	; db 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
-	; db 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
-	; db 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0
-	; db 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0
-	; db 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1
-
-	
 invader_col_fire_table:
 	db $1, $7, $1, $1, $1, $4, $B, $1, $6, $3, $1, $1, $1, $B, $9, $2, $8
 	db $2, $B, $4, $7, $A
@@ -666,9 +649,6 @@ inv_explode_time:
 exploding_inv:
 	db 0
 	
-inv_explode_spr:
-	db 0
-
 inv_shot_spr:
 	db 0
 

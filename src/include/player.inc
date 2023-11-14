@@ -132,6 +132,7 @@ process_player:
     jp z, @done
     
     ; print pixel color 
+    if DEBUG
     push af
     push bc
     push hl
@@ -153,6 +154,7 @@ process_player:
     pop hl
     pop bc
     pop af
+    endif
 
 @check_inv:
     ; Check if hit an invader
