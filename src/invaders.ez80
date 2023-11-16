@@ -11,7 +11,38 @@ MAX_ARGS:	equ 1
 
 _main:
 	call vdp_init
+display_menu:
+	ld hl, menu
+	ld bc, menu_end-menu
+	rst.lil $18
+
+@key_loop:
+	call delay
+	ld a, (keycode)
+	or a
+	jr z, @key_loop
 	
+@key_release:
+	call delay
+	ld a, (keycode)
+	or a
+	jr nz, @key_release
+
+	jp new_game
+
+menu:
+	db 31, 13, 10
+	db "SPACE  INVADERS"
+	db 31, 18, 13
+	db "PLAY"
+menu_end:
+
+	
+;--------------------------------
+
+new_game:
+	call vdp_cls
+
 	; Initialise the invader sprites
 	call init_invaders
 	call init_player
@@ -82,10 +113,12 @@ exit:
 	ret
 
 delay:
+	push bc
 	ld b, 1
 @loop:	
 	call vsync
 	djnz @loop
+	pop bc
 	ret
 
 	

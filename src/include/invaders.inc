@@ -12,8 +12,7 @@ init_invaders:
 	ld.l de, 0
 	ld e, a
 	add hl, de
-	ld a, (hl)	; Get invader state variable
-	and a
+	xor a
 	ld (hl), a
 	ld a, e
 	add a, 1
@@ -27,6 +26,22 @@ init_invaders:
 	
 	add a, 1
 	ld (next_sprite_index), a
+	
+	ld hl, state_start
+	ex de, hl
+	ld hl, state_start
+	inc de
+	ld (hl), 0
+	ld bc, state_end-state_start
+	ldir
+
+	ld a, 80
+	ld (invader_ref_y), a
+	ld (last_invader_ref_y), a
+	ld a, 2
+	ld (invader_direction), a
+	ld a, $34
+	ld (fleet_sound_timer), a
 
 	pop de
 	pop bc
@@ -608,50 +623,46 @@ invaders:
 	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
+inv_shot_spr:
+	db 0
+
+; Invader shoot calculation
 invader_col_fire_table:
 	db $1, $7, $1, $1, $1, $4, $B, $1, $6, $3, $1, $1, $1, $B, $9, $2, $8
 	db $2, $B, $4, $7, $A
-	
 invader_col_pos_1_init:
 	db 6
 invader_col_pos_1:
 	db 6
 
-invader_cursor:
-	db 0
 invader_count:
 	db 0
-	
+
+state_start:
+invader_cursor:
+	db 0
 invader_anim_frame:
 	db 0
-
 invader_ref_y:
 	db 80
 invader_off_x:
 	db 0
-
 last_invader_ref_y:
 	db 80
 last_invader_off_x:
 	db 0
-
 invader_direction:
 	db 2
 last_invader_x_pos:
 	dw 0, 0
 should_swap:
 	db 0
-	
 inv_exploding:
 	db 0
 inv_explode_time:
 	db 0
 exploding_inv:
 	db 0
-	
-inv_shot_spr:
-	db 0
-
 
 shot_pos_x:
     db 0
@@ -659,11 +670,14 @@ shot_pos_y:
     db 0
 shot_active:
     db 0
+state_end:	
 	
 fleet_sound_timer:
 	db $01
 fleet_sound:
 	db 0
+	db 0
+
 fleet_sound_alien_counts:
 	db $32, $2B, $24, $1C, $16, $11, $0D, $0A, $08, $07, $06, $05, $04, $03, $02, $01
 fleet_sound_delays:
