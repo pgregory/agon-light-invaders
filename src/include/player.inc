@@ -353,6 +353,8 @@ player_explode_time:
 	db 0
 player_explode_counter:
     db 0
+player_score:
+    dw 0
 player_state_end:
     db 0
     

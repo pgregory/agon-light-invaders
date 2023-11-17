@@ -51,3 +51,46 @@ home_cursor:
     PRT_CHR
     
     ret
+    
+; B - row
+; C - col
+set_cursor:
+    ld a, c
+    ld (@col), a
+    ld a, b
+    ld (@row), a
+    ld hl, @cmd
+    ld bc, @cmd_end-@cmd
+    rst.lil $18
+    ret
+
+@cmd:
+	db 31
+@col:
+    db 30
+@row:
+    db 1
+@cmd_end:
+
+
+; HL - Number to print
+print_Dec16:    
+    ld bc, -10000
+    call @num1
+    ld bc, -1000
+    call @num1
+    ld bc, -100
+    call @num1
+    ld c, -10
+    call @num1
+    ld c, -1
+@num1:
+    ld a, '0'-1
+@num2:
+    inc a
+    add hl, bc
+    jr c, @num2
+    sbc hl, bc
+    PRT_CHR
+    ret
+    

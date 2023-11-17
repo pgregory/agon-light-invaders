@@ -83,7 +83,7 @@ update_invaders:
 	call get_curr_inv_coords	; Get invader coords BC, HL
 	ld (last_invader_x_pos), bc	; Store X for boundary check
 
-	call get_inv_type
+	call get_inv_bitmaps
 	ld a, (hl)
 	ld hl, invader_anim_frame
 	add a, (hl)
@@ -418,8 +418,26 @@ get_inv_at:
 	
 
 ; A - index
-; Returns HL - bitmap list
+; Returns A - type
 get_inv_type:
+	push bc
+	ld bc, 0
+@row_loop:
+	cp 11
+	jp m, @at_row
+	sbc a, 11
+	inc bc
+	jp @row_loop
+@at_row:
+	ld a, c
+	and 0xfe
+	rrca
+	pop bc
+	ret
+
+; A - index
+; Returns HL - bitmap list
+get_inv_bitmaps:
 	push af
 	push bc
 	ld bc, 0
@@ -502,22 +520,6 @@ invader_shoot:
 	ret
 
 
-; A - index
-draw_invader:
-	push bc
-	push af
-	call get_curr_inv_coords
-	call get_inv_type
-	ld a, (hl)
-	ld c, a
-	ld a, (invader_anim_frame)
-	add a, c
-	call draw_bitmap
-	pop af
-	pop bc
-	
-	ret
-
 ; A - index	
 remove_explosion:
 	push bc
@@ -533,6 +535,7 @@ remove_explosion:
 	
 ; A - index
 kill_invader:
+	push af
     ld hl, invaders				; Point to invaders status table
     ld c, a						; Store invader cursor
     ld b, 0						; Clear MSB
@@ -547,6 +550,22 @@ kill_invader:
     ld (inv_exploding), a
     ld a, $10
     ld (inv_explode_time), a
+	
+	pop af
+	call get_inv_type
+	ld c, a
+
+	ld hl, player_score
+	ld a, (hl)
+	add a, 10
+	dec c
+	jp m, @done
+	add a, 10
+	dec c
+	jp m, @done
+	add a, 10
+@done:
+	ld (hl), a
 	
 	ret
 	

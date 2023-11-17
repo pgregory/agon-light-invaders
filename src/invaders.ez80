@@ -15,8 +15,8 @@ _main:
 	call init_invaders
 
 display_menu:
-	ld hl, menu
-	ld bc, menu_end-menu
+	ld hl, @menu
+	ld bc, @menu_end-@menu
 	rst.lil $18
 
 @key_loop:
@@ -43,12 +43,12 @@ display_menu:
 
 	jp new_game
 
-menu:
+@menu:
 	db 31, 13, 10
 	db "SPACE  INVADERS"
 	db 31, 18, 13
 	db "PLAY"
-menu_end:
+@menu_end:
 
 	
 ;--------------------------------
@@ -74,6 +74,8 @@ new_game:
 	
 	ld a, (next_sprite_index)
 	call activate_sprites
+	
+	call display_gui
 
 @loop:
 	call delay 
@@ -84,7 +86,7 @@ new_game:
 	call update_sprites
 
 	call process_player
-	; call update_gui
+	call update_gui
 	call play_fleet_sound
 	
 	ld a, (keycode)
@@ -118,12 +120,12 @@ delay:
 
 	
 
-update_gui:
+display_gui:
 	push hl
 	push bc
 	push af
-	ld hl, title
-	ld bc, title_end-title
+	ld hl, @title
+	ld bc, @title_end-@title
 	rst.lil $18
 	pop af
 	pop bc
@@ -140,25 +142,32 @@ update_gui:
 
 	ret
 
-title:
+@title:
 	db 31, 30, 1
 	db "SPACE"
 	db 31, 29, 2
 	db "INVADERS"
 	db 31, 30, 5
 	db "SCORE"
-	db 31, 30, 7
-	db "00020"
+	; db 31, 30, 7
+	; db "00020"
 	db 31, 31, 10
 	db "HI"
 	db 31, 30, 11
 	db "SCORE"
 	db 31, 30, 13 
-	db "00020"
+	db "00000"
 	db 31, 30, 19
 	db "03"
-title_end:
+@title_end:
 
+
+update_gui:
+	ld.lil bc, $071e
+	call set_cursor
+	ld hl, (player_score)
+	call print_Dec16
+	ret
 
 
 bottom_line:
