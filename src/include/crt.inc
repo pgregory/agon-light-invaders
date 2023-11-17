@@ -96,6 +96,8 @@ mos_uputc:	equ	$18
 mos_fread:	equ	$1a
 mos_fwrite:	equ	$1b
 
+mos_getkbmap: equ $1e
+
 
 ;; File modes
 fa_read:	equ	$01

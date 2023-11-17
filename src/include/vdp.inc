@@ -25,23 +25,22 @@ BMP_INVADER3_2:	equ $05
 BMP_SAUCER:		equ $06
 
 BMP_SHIELD:		equ $07
-BMP_LINE:		equ $08
-BMP_PLAYER:		equ $09
-BMP_BULLET:		equ $0A
+BMP_PLAYER:		equ $08
+BMP_BULLET:		equ $09
 
-BMP_BLANK:		equ $0B
+BMP_BLANK:		equ $0A
 
-BMP_INV_EXPLOSION: equ $0C
+BMP_INV_EXPLOSION: equ $0B
 
-BMP_PLYR_B_EXPL: equ $0D
+BMP_PLYR_B_EXPL: equ $0C
 
-BMP_INV_SHOT_F1: equ $0E
-BMP_INV_SHOT_F2: equ $0F
-BMP_INV_SHOT_F3: equ $10
-BMP_INV_SHOT_F4: equ $11
+BMP_INV_SHOT_F1: equ $0D
+BMP_INV_SHOT_F2: equ $0E
+BMP_INV_SHOT_F3: equ $0F
+BMP_INV_SHOT_F4: equ $10
 
-BMP_PLAYER_EXP1: equ $12
-BMP_PLAYER_EXP2: equ $13
+BMP_PLAYER_EXP1: equ $11
+BMP_PLAYER_EXP2: equ $12
 
 
 keycode_ptr:	dl	0
@@ -50,17 +49,6 @@ vk_code:	dl	0
 key_up:		dl	0
 
 keycode:	db	0
-vk:		db	0
-
-c_up:	db	0
-c_dn:	db	0
-c_lf:	db	0
-c_rt:	db	0
-
-VK_U: equ 150
-VK_D: equ 152
-VK_L: equ 154
-VK_R: equ 156
 
 vdp_flags_ptr:
 	dl 0
@@ -69,6 +57,8 @@ pixel_data_ptr:
 screen_width_ptr:
 	dl 0
 screen_height_ptr:
+	dl 0
+kbmap_ptr:
 	dl 0
 	
 next_sprite_index:
@@ -94,6 +84,9 @@ vdp_init:
 	ld (screen_height_ptr), hl
 
 	ld (frame_ptr), ix
+	
+	MOSCALL mos_getkbmap
+	ld (kbmap_ptr), ix
 
 	ld hl, vdp_init_1
 	ld bc, vdp_init_1_end-vdp_init_1
@@ -113,59 +106,6 @@ vdp_init:
 	ret
 
 
-	
-
-vk_down:
-	ld hl, (vk_code)
-	ld a, (hl)
-
-	ld hl, c_up
-	cp VK_U
-	jr z, @write
-
-	inc hl
-	cp VK_D
-	jr z, @write
-	
-	inc hl
-	cp VK_L
-	jr z, @write
-
-	inc hl
-	cp VK_R
-	jr z, @write
-	ret
-@write:
-	ld a, 1
-	ld (hl), a
-	ret
-
-vk_up:
-	ld hl, (vk_code)
-	ld a, (hl)
-
-	ld hl, c_up
-	cp VK_U
-	jr z, @write
-
-	inc hl
-	cp VK_D
-	jr z, @write
-	
-	inc hl
-	cp VK_L
-	jr z, @write
-
-	inc hl
-	cp VK_R
-	jr z, @write
-	ret
-@write:
-	xor a
-	ld (hl), a
-	ret
-
-
 get_key:
 	xor a
 	ld (keycode), a
@@ -173,19 +113,19 @@ get_key:
 	ld hl, (key_up)
 	ld a, (hl)
 	and a
-	jr z, vk_up	
-
-	call vk_down
+	jr z, @key_up	
 
 	ld hl, (keycode_ptr)
 	ld a, (hl)
 	ld (keycode), a
+@key_up:
 	ret
 
 vsync:
 	ld hl, (frame_ptr)
 	ld a, (hl)
-@wait:	push af
+@wait:	
+	push af
 	push hl
 	call get_key
 	pop hl
@@ -654,6 +594,51 @@ play_channel:
 @end:
 
 
+; HL - keycode
+check_key:
+	push hl
+	push bc
+	push de
+	
+	MOSCALL mos_getkbmap
+	inc hl
+	ld a, l
+	neg
+	ld c, a
+	ld a, 1
+	jp m, @error
+	ld hl, @bitlookup
+	ld de, 0
+	ld a, c
+	and %00000111
+	ld e, a
+	add hl, de
+	ld b, (hl)
+	ld a, c
+	and %01111000
+	rrca
+	rrca
+	rrca
+	ld e, a
+	add.lil ix, de
+	ld.lil a, (ix+0)
+	and b
+	jr @done
+	
+@error:
+	cp a	; Set zero flag
+
+@done:
+	pop de
+	pop bc
+	pop hl
+	ret
+	
+@bitlookup:
+	db $01, $02, $04, $08
+	db $10, $20, $40, $80
+	
+
 vdp_init_1:
 	db 22, 13 ; Mode 13
 	db 23, 1, 0 ; Hide cursor
@@ -678,7 +663,6 @@ vdp_init_2:
 	DEFBMP BMP_INVADER3_2, 16, 20, "imgs/invader3_2.rgba"
 	DEFBMP BMP_SAUCER, 16, 16, "imgs/saucer.rgba"
 	DEFBMP BMP_SHIELD, 22, 16, "imgs/shield.rgba"
-	DEFBMP BMP_LINE, 16, 1, "imgs/line.rgba"
 	DEFBMP BMP_PLAYER, 16, 8, "imgs/player.rgba"
 	DEFBMP BMP_BULLET, 1, 4, "imgs/bullet.rgba"
 	DEFBMP BMP_BLANK, 16, 20, "imgs/blank_invader.rgba"

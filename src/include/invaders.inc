@@ -5,19 +5,6 @@ init_invaders:
 	push bc
 	push de
 	
-	ld a, 0
-	ld b, 55 ; Number of invaders
-@inv_def_loop:
-	ld hl, invaders
-	ld.l de, 0
-	ld e, a
-	add hl, de
-	xor a
-	ld (hl), a
-	ld a, e
-	add a, 1
-	djnz @inv_def_loop
-	
 	ld a, (next_sprite_index) ; Sprite index
 	ld (inv_shot_spr), a
 	ld hl, inv_shot_sprite_data
@@ -27,12 +14,34 @@ init_invaders:
 	add a, 1
 	ld (next_sprite_index), a
 	
-	ld hl, state_start
+	pop de
+	pop bc
+	pop hl
+	pop af
+	ret
+	
+reset_invaders:
+	push af
+	push bc
+	push de
+	push hl
+	ld a, 0
+	ld b, 55 ; Number of invaders
+@inv_def_loop:
+	ld hl, invaders
+	ld.l de, 0
+	ld e, a
+	add hl, de
+	ld (hl), 0
+	add a, 1
+	djnz @inv_def_loop
+	
+	ld hl, inv_state_start
 	ex de, hl
-	ld hl, state_start
+	ld hl, inv_state_start
 	inc de
 	ld (hl), 0
-	ld bc, state_end-state_start
+	ld bc, inv_state_end-inv_state_start
 	ldir
 
 	ld a, 80
@@ -43,10 +52,11 @@ init_invaders:
 	ld a, $34
 	ld (fleet_sound_timer), a
 
+	pop hl
 	pop de
 	pop bc
-	pop hl
 	pop af
+	
 	ret
 	
 
@@ -638,7 +648,7 @@ invader_col_pos_1:
 invader_count:
 	db 0
 
-state_start:
+inv_state_start:
 invader_cursor:
 	db 0
 invader_anim_frame:
@@ -670,7 +680,7 @@ shot_pos_y:
     db 0
 shot_active:
     db 0
-state_end:	
+inv_state_end:	
 	
 fleet_sound_timer:
 	db $01

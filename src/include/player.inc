@@ -19,6 +19,25 @@ init_player:
     ld (next_sprite_index), a
 
     ret
+    
+
+reset_player:
+    push bc
+    push de
+    push hl
+    
+    ld hl, player_state
+    ex de, hl
+    ld hl, player_state
+    ld (hl), 0
+    ld bc, player_state_end-player_state
+    ldir
+
+    pop hl
+    pop de
+    pop bc
+    
+    ret
 
 
 
@@ -32,14 +51,13 @@ process_player:
     and a
     jp nz, @player_exploding_countdown
 
+    ld hl, KEY_RIGHT
+    call check_key
+    jp nz, @move_right
 
-    ld a, (keycode)
-
-    cp KEY_RIGHT
-    jp z, @move_right
-    
-    cp KEY_LEFT
-    jp z, @move_left
+    ld hl, KEY_LEFT
+    call check_key
+    jp nz, @move_left
     
     jp @update_sprite
     
@@ -71,9 +89,10 @@ process_player:
     ld a, (inv_exploding)
     and a
     jp nz, @move_bullet
-    ld a, (keycode)
-    cp KEY_FIRE
-    jp nz, @move_bullet
+
+    ld hl, KEY_FIRE
+    call check_key
+    jp z, @move_bullet
     
     ld a, (bullet_active)
     and a
@@ -296,12 +315,19 @@ test:
 
 
     
-KEY_LEFT: equ 8
-KEY_RIGHT: equ 21
-KEY_FIRE: equ 32
+KEY_LEFT: equ -26
+KEY_RIGHT: equ -122
+KEY_FIRE: equ -99
 PLAYER_YPOS: equ 165
 BULLET_START_YPOS: equ 160
 
+
+player_sprite_data:
+	db 1, BMP_PLAYER
+bullet_sprite_data:
+	db 1, BMP_BULLET
+player_exp_sprite_data:
+    db 2, BMP_PLAYER_EXP1, BMP_PLAYER_EXP2
 
 player_spr:
     db 0
@@ -310,6 +336,7 @@ bullet_spr:
 player_exp_spr:
     db 0
 
+player_state:
 player_position: 
     db 35
     
@@ -326,12 +353,7 @@ player_explode_time:
 	db 0
 player_explode_counter:
     db 0
+player_state_end:
+    db 0
     
-player_sprite_data:
-	db 1, BMP_PLAYER
-bullet_sprite_data:
-	db 1, BMP_BULLET
-player_exp_sprite_data:
-    db 2, BMP_PLAYER_EXP1, BMP_PLAYER_EXP2
-
     

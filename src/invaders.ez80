@@ -11,6 +11,9 @@ MAX_ARGS:	equ 1
 
 _main:
 	call vdp_init
+	call init_player
+	call init_invaders
+
 display_menu:
 	ld hl, menu
 	ld bc, menu_end-menu
@@ -18,6 +21,16 @@ display_menu:
 
 @key_loop:
 	call delay
+
+	ld a, (keycode)
+	; Print keycode for identification
+    push af
+	ld l, a
+	ld h, 0
+	call home_cursor
+	call print_Hex16
+    pop af
+
 	ld a, (keycode)
 	or a
 	jr z, @key_loop
@@ -39,14 +52,11 @@ menu_end:
 
 	
 ;--------------------------------
-
 new_game:
 	call vdp_cls
+	call reset_player
+	call reset_invaders
 
-	; Initialise the invader sprites
-	call init_invaders
-	call init_player
-	
 	ld a, BMP_SHIELD
 	ld bc, 32
 	ld de, 140
@@ -58,24 +68,9 @@ new_game:
 	ld bc, 32+22+23+22+23+22+23
 	call draw_bitmap
 
-	ld b, 13
-	ld hl, 8 
-@line_loop:
-	push bc
-	ld a, BMP_LINE
-	ld c, l
-	ld b, h
-	ld de, 180
-	call draw_bitmap
-	ld a, 16
-	ld b, 0
-	ld c, a
-	add hl, bc
-	pop bc
-	djnz @line_loop
-	
-	;ld a, 8
-	;call draw_line
+	ld a, 2
+	ld ix, bottom_line
+	call draw_line
 	
 	ld a, (next_sprite_index)
 	call activate_sprites
@@ -89,9 +84,9 @@ new_game:
 	call update_sprites
 
 	call process_player
-	call update_gui
+	; call update_gui
 	call play_fleet_sound
-
+	
 	ld a, (keycode)
 
 	if DEBUG
@@ -122,13 +117,6 @@ delay:
 	ret
 
 	
-
-bottom_line:
-	dw 8
-	dw 180
-	dw 168
-	dw 180
-
 
 update_gui:
 	push hl
@@ -171,4 +159,11 @@ title:
 	db "03"
 title_end:
 
+
+
+bottom_line:
+	dw 8
+	dw 180
+	dw 208
+	dw 180
 
