@@ -22,6 +22,7 @@ display_menu:
 @key_loop:
 	call delay
 
+	if DEBUG
 	ld a, (keycode)
 	; Print keycode for identification
     push af
@@ -30,6 +31,7 @@ display_menu:
 	call home_cursor
 	call print_Hex16
     pop af
+	endif
 
 	ld a, (keycode)
 	or a
@@ -46,8 +48,8 @@ display_menu:
 @menu:
 	db 31, 13, 10
 	db "SPACE  INVADERS"
-	db 31, 18, 13
-	db "PLAY"
+	db 31, 13, 13
+	db "ANY KEY TO PLAY"
 @menu_end:
 
 	
