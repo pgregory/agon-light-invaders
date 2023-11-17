@@ -278,6 +278,12 @@ explode_player:
     ld a, (player_exp_spr)
     ld de, PLAYER_YPOS
     call move_sprite
+    
+    ld a, -6
+    ld b, a
+    ld a, 1
+    ld de, 1200
+    call play_channel
 
     pop hl
     pop bc
@@ -286,33 +292,14 @@ explode_player:
     
     ret
 
-; A - channel
-test:
-	push af
-	push hl
-	push bc
-	push de
-	ld (@channel), a
-	ld hl, @cmd
-	ld bc, @end-@cmd
-	rst.lil $18
-	pop de
-	pop bc
-	pop hl
-	pop af
-	ret
-
-@cmd:
-	db 23, 0, $85
-@channel:
-	db 0
-	db 0
-	db 127
-	dw 16000
-	dw 310
-@end:
-
-
+; HL - score to add
+add_to_score:
+	ld ix, player_score
+	ld hl, (ix+0)
+	add hl, de
+	ld (ix+0), hl
+    
+    ret
 
     
 KEY_LEFT: equ -26

@@ -161,6 +161,10 @@ update_invader_shots:
 	push af
 	push bc
 	push hl
+	
+	ld a, (player_exploding)
+	and a
+	jp nz, @done
 
 	ld a, (shot_active)
 	and a
@@ -246,6 +250,8 @@ update_invader_shots:
 @shot_exited:
 	ld a, 0
 	ld (shot_active), a
+    ld a, (inv_shot_spr)
+    call hide_sprite
 	call invader_shoot
 
 @done:
@@ -481,6 +487,11 @@ invader_shoot:
 	push bc
 	push hl
 	
+	ld a, (player_exploding)
+	and a
+	jp nz, @done
+	
+	
 	ld hl, invader_col_fire_table
 	ld a, (invader_col_pos_1)
 	cp $10
@@ -551,21 +562,26 @@ kill_invader:
     ld a, $10
     ld (inv_explode_time), a
 	
+	ld a, -7
+	ld b, a
+	ld a, 2
+	ld de, 420
+	call play_channel
+	
 	pop af
 	call get_inv_type
 	ld c, a
 
-	ld hl, player_score
-	ld a, (hl)
-	add a, 10
+	ld de, 10
+	ld hl, 10
 	dec c
 	jp m, @done
-	add a, 10
+	add hl, de
 	dec c
 	jp m, @done
-	add a, 10
+	add hl, de
 @done:
-	ld (hl), a
+	call add_to_score
 	
 	ret
 	
@@ -596,6 +612,11 @@ play_fleet_sound:
 	; Choose from the 4 sounds
 	ld hl, fleet_sound
 	inc (hl)
+
+	ld a, (inv_exploding)
+	and a
+	jr nz, @next
+	
 	ld a, (hl)
 	cp 4
 	jr c, @play_sound
@@ -613,6 +634,7 @@ play_fleet_sound:
 	ld de, 73
 	call play_channel
 
+@next:
 	ld hl, fleet_sound_alien_counts
 	ld de, fleet_sound_delays
 	ld a, (invader_count)

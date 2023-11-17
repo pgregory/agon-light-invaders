@@ -682,4 +682,6 @@ vdp_init_3:
 	DEFWAV -3, 1052, "audio/fleet2.pcm"			; Length 1052
 	DEFWAV -4, 1107, "audio/fleet3.pcm"			; Length 1107
 	DEFWAV -5, 1187, "audio/fleet4.pcm"			; Length 1187
+	DEFWAV -6, 21225, "audio/player_exp.pcm"	; Length 21225
+	DEFWAV -7, 7341, "audio/invader_exp.pcm"	; Length 7341
 vdp_init_3_end:
