@@ -4,6 +4,7 @@ init_invaders:
 	push hl
 	push bc
 	push de
+	push ix
 	
 	ld a, (next_sprite_index) ; Sprite index
 	ld (inv_shot_spr), a
@@ -11,9 +12,24 @@ init_invaders:
 	call def_sprite
 	call hide_sprite
 	
-	add a, 1
+	inc a
+
+	ld (inv_shot_spr2), a
+	ld hl, inv_shot_sprite_data_p
+	call def_sprite
+	call hide_sprite
+
+	inc a
+
+	ld (inv_shot_spr3), a
+	ld hl, inv_shot_sprite_data
+	call def_sprite
+	call hide_sprite
+	
+	inc a
 	ld (next_sprite_index), a
 	
+	pop ix
 	pop de
 	pop bc
 	pop hl
@@ -161,41 +177,97 @@ update_invader_shots:
 	push af
 	push bc
 	push hl
-	
+
 	ld a, (player_exploding)
 	and a
 	jp nz, @done
 
-	ld a, (shot_active)
-	and a
-	jp nz, @doit
-	
-	call invader_shoot
+	ld bc, sb_end - sb_start ; Step between shot data blocks
+
+	ld ix, shot_data
+	ld a, (shot_timer)	; 0 - shot1, 1 - shot2, 2 - shot3
+
+	cp 0
+	jp z, @shot1
+	add ix, bc
+	cp 1
+	jp z, @shot2
+	add ix, bc
+	cp 2
+	jp z, @shot3
+	dec a
+	ld (shot_timer), a
 	jp @done
+
+@shot3:
+	dec a
+	ld (shot_timer), a
+	ld a, (ix + 5)	; column offset
+	cp $15
+	jp c, @col3_ok
+	ld (ix + 5), 6
+@col3_ok:
+	ld a, (shot1_step)
+	ld (other1), a
+	ld a, (shot2_step)
+	ld (other2), a
+	jr @doit
+
+@shot2:
+	dec a
+	ld (shot_timer), a
+	ld a, (ix + 5)	; column offset
+	cp $10
+	jp c, @col2_ok
+	ld (ix + 5), 0
+@col2_ok:
+	ld a, (shot1_step)
+	ld (other1), a
+	ld a, (shot3_step)
+	ld (other2), a
+	jr @doit
+	
+@shot1:
+	ld a, (shot2_step)
+	ld (other1), a
+	ld a, (shot3_step)
+	ld (other2), a
+	ld a, 2
+	ld (shot_timer), a
 	
 @doit:
-    ld a, (shot_pos_y)
-    add a, 1
+	ld a, (ix + 0)
+	or a
+	jp z, @check_shoot
+
+	; Increment counter
+	inc (ix + 4)
+
+	ld a, (shot_speed)
+	ld c, a
+    ld a, (ix + 2) ; Y pos
+    add a, c
+
 	cp $F0
     jp nc, @shot_exited
 
-    ld (shot_pos_y), a
+    ld (ix + 2), a
 
-    ld a, (shot_pos_x)
+    ld a, (ix + 1)
     ld c, a
     ld b, 0
-    ld a, (shot_pos_y)
+    ld a, (ix + 2)
     ld e, a
     ld d, 0
-    ld a, (inv_shot_spr)
+    ld a, (ix + 3)
     call move_sprite
 	call next_frame_sprite		; Animate sprite frame
 
-    ld a, (shot_pos_x)
+    ld a, (ix + 1)
 	add a, 1
     ld c, a
     ld b, 0
-    ld a, (shot_pos_y)
+    ld a, (ix + 2)
 	add a, 8
     ld e, a
     ld d, 0
@@ -216,7 +288,7 @@ update_invader_shots:
 	; pop hl
 
 @check_hits:
-    ld a, (shot_pos_y)
+    ld a, (ix + 2)
     add a, 8
     cp 140
     jp c, @done
@@ -229,30 +301,37 @@ update_invader_shots:
     
     call explode_player
 
-    jp @shot_exited
+    jp @shot_destroyed
     
 @check_shields:
     ; Check if the hit is in the range of the shields
     cp 140
     jp c, @done
 
-    ld a, (shot_pos_x)
+    ld a, (ix + 1)
     sub 3
     ld c, a
     ld b, 0
-    ld a, (shot_pos_y)
+    ld a, (ix + 2)
 	add a, 4
     ld e, a
     ld d, 0
     ld a, BMP_PLYR_B_EXPL
     call draw_bitmap
+	
+@shot_destroyed:
+	ld (ix + 4), 0
+	jr @shot_exited
     
+@check_shoot:
+	call invader_shoot
+	jr @done
+
 @shot_exited:
 	ld a, 0
-	ld (shot_active), a
-    ld a, (inv_shot_spr)
+	ld (ix + 0), a
+    ld a, (ix + 3)
     call hide_sprite
-	call invader_shoot
 
 @done:
 	pop hl
@@ -482,31 +561,41 @@ swap_rack_direction:
 	ret
 
 	
+; IX - shot data block
 invader_shoot:
 	push af
 	push bc
 	push hl
-	
+
 	ld a, (player_exploding)
 	and a
 	jp nz, @done
-	
+
+	; Check reload rate
+	ld hl, shot_rate
+	ld a, (other1)
+	and a
+	jp z, @next
+	cp (hl)
+	jp c, @done 
+
+@next:
+	ld a, (other2)
+	and a
+	jp z, @ok
+	cp (hl)
+	jp c, @done 
+
+@ok:	
+	; Reset counter
+	ld (ix + 4), 0
 	
 	ld hl, invader_col_fire_table
-	ld a, (invader_col_pos_1)
-	cp $10
-	jp c, @do_shot
-
-	; Loop through column table
-	ld a, (invader_col_pos_1_init)
-	ld (invader_col_pos_1), a
-	
-@do_shot:
+	ld a, (ix + 5)
+	inc (ix + 5)
 	ld c, a
 	ld b, 0
 	add hl, bc
-	add a, 1
-	ld (invader_col_pos_1), a
 	ld a, (hl)
 
 	call bottom_invader_in_column
@@ -515,14 +604,15 @@ invader_shoot:
 	call get_curr_inv_coords
 	ld a, c
 	add a, 7
-	ld (shot_pos_x), a
+	ld (ix + 1), a
 	ld a, e
 	add a, 11
-	ld (shot_pos_y), a
+	ld (ix + 2), a
 	ld a, 1
-	ld (shot_active), a
-	ld a, (inv_shot_spr)
+	ld (ix + 0), a
+	ld a, (ix + 3)
 	call show_sprite
+	inc (ix + 4)
 	
 @done:
 	pop hl
@@ -666,6 +756,12 @@ animation_frame:
 	
 inv_shot_sprite_data:
 	db 4, BMP_INV_SHOT_F1, BMP_INV_SHOT_F2, BMP_INV_SHOT_F3, BMP_INV_SHOT_F4
+
+inv_shot_sprite_data_p:
+	db 4, BMP_INV_SHOT_P1, BMP_INV_SHOT_P2, BMP_INV_SHOT_P3, BMP_INV_SHOT_P4
+
+inv_shot_sprite_data_r:
+	db 4, BMP_INV_SHOT_R1, BMP_INV_SHOT_R2, BMP_INV_SHOT_R3, BMP_INV_SHOT_R4
 	
 invaders:
 	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
@@ -674,17 +770,11 @@ invaders:
 	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
-inv_shot_spr:
-	db 0
 
 ; Invader shoot calculation
 invader_col_fire_table:
-	db $1, $7, $1, $1, $1, $4, $B, $1, $6, $3, $1, $1, $1, $B, $9, $2, $8
-	db $2, $B, $4, $7, $A
-invader_col_pos_1_init:
-	db 6
-invader_col_pos_1:
-	db 6
+	db $0, $6, $0, $0, $0, $3, $A, $0, $5, $2, $0, $0, $0, $A, $8, $1, $7
+	db $1, $A, $3, $6, $9
 
 invader_count:
 	db 0
@@ -714,15 +804,54 @@ inv_explode_time:
 	db 0
 exploding_inv:
 	db 0
-
-shot_pos_x:
-    db 0
-shot_pos_y:
-    db 0
-shot_active:
-    db 0
 inv_state_end:	
+	db 0
+
+
+; Shot data blocks
+shot_timer:
+	db 2	; frame timer
+shot_data:
+
+	; Shot 1 "Rolling"
+sb_start:
+shot_1:
+	db 0	; status
+    db 0, 0	; x, y
+inv_shot_spr:
+	db 0
+shot1_step:
+	db 0	; counter
+	db 0	; column offset
+sb_end:
+
+	; Shot 2 "Plunger"
+shot_2:
+	db 0	; status
+    db 0, 0	; x, y
+inv_shot_spr2:
+	db 0
+shot2_step:
+	db 0	; counter
+	db 0	; column offset
+
+	; Shot 3 "Squiggly"
+shot_3:
+	db 0	; status
+    db 0, 0	; x, y
+inv_shot_spr3:
+	db 0
+shot3_step:
+	db 0	; counter
+	db 6	; column offset
 	
+
+other1:
+	db 0
+other2:
+	db 0
+	
+
 fleet_sound_timer:
 	db $01
 fleet_sound:
@@ -733,3 +862,15 @@ fleet_sound_alien_counts:
 	db $32, $2B, $24, $1C, $16, $11, $0D, $0A, $08, $07, $06, $05, $04, $03, $02, $01
 fleet_sound_delays:
 	db $34, $2E, $27, $22, $1C, $18, $15, $13, $10, $0E, $0D, $0C, $0B, $09, $07, $05
+
+	
+shot_speed:
+	db 4
+shot_rate:
+	db $30
+	
+shot_rates:
+	db $30, $10, $0B, $08
+	db $07
+shot_score_tab:
+	db $02, $10, $20, $30

@@ -42,6 +42,16 @@ BMP_INV_SHOT_F4: equ $10
 BMP_PLAYER_EXP1: equ $11
 BMP_PLAYER_EXP2: equ $12
 
+BMP_INV_SHOT_P1: equ $13
+BMP_INV_SHOT_P2: equ $14
+BMP_INV_SHOT_P3: equ $15
+BMP_INV_SHOT_P4: equ $16
+
+BMP_INV_SHOT_R1: equ $17
+BMP_INV_SHOT_R2: equ $18
+BMP_INV_SHOT_R3: equ $19
+BMP_INV_SHOT_R4: equ $1A
+
 
 keycode_ptr:	dl	0
 frame_ptr:	dl	0
@@ -672,6 +682,14 @@ vdp_init_2:
 	DEFBMP BMP_INV_SHOT_F2, 3, 8, "imgs/invader_shot_f2.rgba"
 	DEFBMP BMP_INV_SHOT_F3, 3, 8, "imgs/invader_shot_f3.rgba"
 	DEFBMP BMP_INV_SHOT_F4, 3, 8, "imgs/invader_shot_f4.rgba"
+	DEFBMP BMP_INV_SHOT_P1, 3, 8, "imgs/invader_shot_p1.rgba"
+	DEFBMP BMP_INV_SHOT_P2, 3, 8, "imgs/invader_shot_p2.rgba"
+	DEFBMP BMP_INV_SHOT_P3, 3, 8, "imgs/invader_shot_p3.rgba"
+	DEFBMP BMP_INV_SHOT_P4, 3, 8, "imgs/invader_shot_p4.rgba"
+	DEFBMP BMP_INV_SHOT_R1, 3, 8, "imgs/invader_shot_r1.rgba"
+	DEFBMP BMP_INV_SHOT_R2, 3, 8, "imgs/invader_shot_r2.rgba"
+	DEFBMP BMP_INV_SHOT_R3, 3, 8, "imgs/invader_shot_r3.rgba"
+	DEFBMP BMP_INV_SHOT_R4, 3, 8, "imgs/invader_shot_r4.rgba"
 	DEFBMP BMP_PLAYER_EXP1, 16, 8, "imgs/player_exp1.rgba"
 	DEFBMP BMP_PLAYER_EXP2, 16, 8, "imgs/player_exp2.rgba"
 vdp_init_2_end:
