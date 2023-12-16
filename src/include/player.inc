@@ -33,6 +33,9 @@ reset_player:
     ld bc, player_state_end-player_state
     ldir
 
+    ld a, (player_initial_position)
+    ld (player_position), a
+
     pop hl
     pop de
     pop bc
@@ -120,7 +123,7 @@ process_player:
     jp z, @done
     
     ld a, (bullet_pos_y)
-    sbc a, 2
+    sbc a, 4
     jp c, @bullet_exited
 
     ld (bullet_pos_y), a
@@ -246,6 +249,8 @@ process_player:
 	
 	ld a, 0
 	ld (player_exploding), a
+    ld a, (player_initial_position)
+    ld (player_position), a
 
 @done:
     pop bc
@@ -322,6 +327,8 @@ bullet_spr:
     db 0
 player_exp_spr:
     db 0
+player_initial_position:
+    db 25
 
 player_state:
 player_position: 

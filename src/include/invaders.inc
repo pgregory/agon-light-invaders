@@ -84,6 +84,10 @@ update_invaders:
 	ld a, (inv_exploding)
 	and a
 	jp nz, @inv_exploding_countdown
+
+	ld a, (player_exploding)
+	and a
+	jp nz, @next
 	
 	ld a, (invader_cursor)
 @try:
@@ -340,6 +344,86 @@ update_invader_shots:
 	ret
 	
 	
+; IX - shot data block
+invader_shoot:
+	push af
+	push bc
+	push hl
+
+	ld a, (player_exploding)
+	and a
+	jp nz, @done
+
+	; Check reload rate
+	ld hl, shot_rate
+	ld a, (other1)
+	and a
+	jp z, @next
+	cp (hl)
+	jp c, @done 
+
+@next:
+	ld a, (other2)
+	and a
+	jp z, @ok
+	cp (hl)
+	jp c, @done 
+
+@ok:	
+	; Reset counter
+	ld (ix + 4), 0
+	
+	ld a, (ix + 6)	; check if target player
+	or a
+	jp z, @column
+
+	; Get column above player
+	ld a, (player_position)
+	ld c, a
+	ld b, 0
+	call get_column_at
+	cp $AA
+	jp z, @done
+	call bottom_invader_in_column
+	cp $AA
+	jp z, @done
+	jr @shoot_from_alien
+
+@column:	
+	ld hl, invader_col_fire_table
+	ld a, (ix + 5)
+	inc (ix + 5)
+	ld c, a
+	ld b, 0
+	add hl, bc
+	ld a, (hl)
+
+	call bottom_invader_in_column
+	cp $AA
+	jp z, @done
+
+@shoot_from_alien:
+	call get_curr_inv_coords
+	ld a, c
+	add a, 7
+	ld (ix + 1), a
+	ld a, e
+	add a, 11
+	ld (ix + 2), a
+	ld a, 1
+	ld (ix + 0), a
+	ld a, (ix + 3)
+	call show_sprite
+	inc (ix + 4)
+	
+@done:
+	pop hl
+	pop bc
+	pop af
+	ret
+
+	
+	
 ; A - column
 ; Returns A - invader index
 bottom_invader_in_column:
@@ -440,6 +524,35 @@ get_curr_inv_coords:
 
 	pop af
 	ret
+
+; BC - X
+; Returns A - column index
+get_column_at:
+	push bc
+	push de
+	push hl
+	ld a, (invader_off_x)
+	add a, 24
+	ld e, a
+	ld a, c
+	sub e
+	srl a
+	srl a
+	srl a
+	srl a; Divide by 16 to get column
+	
+	cp 11
+	jp c, @done
+
+@none:
+	ld a, $AA
+
+@done:
+	pop hl
+	pop de
+	pop bc
+	ret
+	
 
   
 ; BC - X
@@ -561,65 +674,6 @@ swap_rack_direction:
 	ret
 
 	
-; IX - shot data block
-invader_shoot:
-	push af
-	push bc
-	push hl
-
-	ld a, (player_exploding)
-	and a
-	jp nz, @done
-
-	; Check reload rate
-	ld hl, shot_rate
-	ld a, (other1)
-	and a
-	jp z, @next
-	cp (hl)
-	jp c, @done 
-
-@next:
-	ld a, (other2)
-	and a
-	jp z, @ok
-	cp (hl)
-	jp c, @done 
-
-@ok:	
-	; Reset counter
-	ld (ix + 4), 0
-	
-	ld hl, invader_col_fire_table
-	ld a, (ix + 5)
-	inc (ix + 5)
-	ld c, a
-	ld b, 0
-	add hl, bc
-	ld a, (hl)
-
-	call bottom_invader_in_column
-	cp $AA
-	jp z, @done
-	call get_curr_inv_coords
-	ld a, c
-	add a, 7
-	ld (ix + 1), a
-	ld a, e
-	add a, 11
-	ld (ix + 2), a
-	ld a, 1
-	ld (ix + 0), a
-	ld a, (ix + 3)
-	call show_sprite
-	inc (ix + 4)
-	
-@done:
-	pop hl
-	pop bc
-	pop af
-	ret
-
 
 ; A - index	
 remove_explosion:
@@ -823,6 +877,7 @@ inv_shot_spr:
 shot1_step:
 	db 0	; counter
 	db 0	; column offset
+	db 1	; target player
 sb_end:
 
 	; Shot 2 "Plunger"
@@ -834,6 +889,7 @@ inv_shot_spr2:
 shot2_step:
 	db 0	; counter
 	db 0	; column offset
+	db 0	; target player
 
 	; Shot 3 "Squiggly"
 shot_3:
@@ -844,6 +900,7 @@ inv_shot_spr3:
 shot3_step:
 	db 0	; counter
 	db 6	; column offset
+	db 0	; target player
 	
 
 other1:
