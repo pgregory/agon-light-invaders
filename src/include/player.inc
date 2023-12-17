@@ -93,17 +93,24 @@ process_player:
     and a
     jp nz, @move_bullet
 
-    ld hl, KEY_FIRE
-    call check_key
-    jp z, @move_bullet
-    
     ld a, (bullet_active)
     and a
     jp nz, @move_bullet
 
+    ld a, (shoot_bounce)
+    and a
+    jp nz, @shoot_debounce
+
+    ld hl, KEY_FIRE
+    call check_key
+    jp z, @done
+    
+    ld a, 1
+    ld (shoot_bounce), a
+    
     ld a, -1
     ld b, a
-    ld a, 1
+    ld a, CHAN_PLAYER
     ld de, 310
     call play_channel
     
@@ -139,20 +146,25 @@ process_player:
     
     ld a, (bullet_pos_y)
     sub a, 4
+    ld h, 4
     ld e, a
     ld d, 0
+    ld ix, (pixel_data_ptr)
+@coll_loop:
     call get_pixel_color
-    
-    ld bc, 1
-    ld hl, (pixel_data_ptr)
-    ld a, (hl)
-    add hl, bc
-    or a, (hl)
-    add hl, bc
-    or a, (hl)
+    ld a, (ix + 0)
+    or a, (ix + 1)
+    or a, (ix + 2)
     and a
-    jp z, @done
+    jr nz, @collide
+    inc e
+    dec h
+    jr nz, @coll_loop
+    jp @done
     
+@collide:
+    ld a, e
+    ld (bullet_col_pos), a
     ; print pixel color 
     if DEBUG
     push af
@@ -183,7 +195,7 @@ process_player:
     ld a, (bullet_pos_x)
     ld c, a
     ld b, 0
-    ld a, (bullet_pos_y)
+    ld a, (bullet_col_pos)
     ld e, a
     ld d, 0
     call get_inv_at
@@ -206,16 +218,15 @@ process_player:
 
 @check_shields:
     ; Check if the hit is in the range of the shields
-    ld a, (bullet_pos_y)
+    ld a, (bullet_col_pos)
     cp $80
-    jp c, @bullet_exited
+    jp c, @check_saucer
 
     ld a, (bullet_pos_x)
     sub 4
     ld c, a
     ld b, 0
-    ld a, (bullet_pos_y)
-    sub 4
+    ld a, (bullet_col_pos)
     ld e, a
     ld d, 0
     ld a, BMP_PLYR_B_EXPL
@@ -223,12 +234,27 @@ process_player:
 
     jp @bullet_exited
     
+@check_saucer:
+    cp SAUCER_Y_BASE
+    jp nc, @bullet_exited
+
+    ld a, 1
+    ld (saucer_exploding), a
+    
 @bullet_exited:
     xor a
     ld (bullet_active), a
     ld a, (bullet_spr)
     call hide_sprite
     jr @done
+
+@shoot_debounce:
+    ld hl, KEY_FIRE
+    call check_key
+    jp nz, @done
+    xor a
+    ld (shoot_bounce), a
+    jp @done
 
 @player_exploding_countdown:
     ld hl, player_explode_time
@@ -286,7 +312,7 @@ explode_player:
     
     ld a, -6
     ld b, a
-    ld a, 1
+    ld a, CHAN_PLAYER
     ld de, 1200
     call play_channel
 
@@ -339,6 +365,10 @@ bullet_pos_x:
 bullet_pos_y:
     db BULLET_START_YPOS
 bullet_active:
+    db 0
+bullet_col_pos:
+    db 0
+shoot_bounce:
     db 0
 
 player_exploding:

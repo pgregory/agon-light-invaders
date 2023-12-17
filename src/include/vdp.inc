@@ -52,6 +52,13 @@ BMP_INV_SHOT_R2: equ $18
 BMP_INV_SHOT_R3: equ $19
 BMP_INV_SHOT_R4: equ $1A
 
+BMP_SAUCER_EXPL: equ $1B
+
+CHAN_PLAYER: equ 0
+CHAN_RANK: equ 1
+CHAN_ALIEN: equ 2
+CHAN_SAUCER: equ 3
+
 
 keycode_ptr:	dl	0
 frame_ptr:	dl	0
@@ -604,6 +611,33 @@ play_channel:
 @end:
 
 
+; A - channel
+; C - volume
+set_volume:
+	push af
+	push hl
+	push bc
+	push de
+	ld (@channel), a
+	ld hl, @cmd
+	ld bc, @end-@cmd
+	rst.lil $18
+	pop de
+	pop bc
+	pop hl
+	pop af
+	ret
+
+@cmd:
+	db 23, 0, $85
+@channel:
+	db 0
+	db 2
+@volume:
+	db 0
+@end:
+
+
 ; HL - keycode
 check_key:
 	push hl
@@ -661,6 +695,7 @@ vdp_init_1:
 	db 23, 0, $86    ; Get screen dimensions
 	db 23, 27, 16    ; Reset and clear sprites
 	db 23, 0, $C0, 0 ; Turn off logical screen coordinates.
+	db 23, 0, $85, 3, 8 ; Turn on audio channel 3
 	db 12
 vdp_init_1_end:
 
@@ -671,7 +706,8 @@ vdp_init_2:
 	DEFBMP BMP_INVADER2_2, 16, 20, "imgs/invader2_2.rgba"
 	DEFBMP BMP_INVADER3_1, 16, 20, "imgs/invader3_1.rgba"
 	DEFBMP BMP_INVADER3_2, 16, 20, "imgs/invader3_2.rgba"
-	DEFBMP BMP_SAUCER, 16, 16, "imgs/saucer.rgba"
+	DEFBMP BMP_SAUCER, 24, 8, "imgs/saucer.rgba"
+	DEFBMP BMP_SAUCER_EXPL, 24, 8, "imgs/saucer_expl.rgba"
 	DEFBMP BMP_SHIELD, 22, 16, "imgs/shield.rgba"
 	DEFBMP BMP_PLAYER, 16, 8, "imgs/player.rgba"
 	DEFBMP BMP_BULLET, 1, 4, "imgs/bullet.rgba"
@@ -702,4 +738,6 @@ vdp_init_3:
 	DEFWAV -5, 1187, "audio/fleet4.pcm"			; Length 1187
 	DEFWAV -6, 21225, "audio/player_exp.pcm"	; Length 21225
 	DEFWAV -7, 7341, "audio/invader_exp.pcm"	; Length 7341
+	DEFWAV -8, 2739, "audio/ufo.pcm"			; Length 2739
+	DEFWAV -9, 2769, "audio/ufo_hit.pcm"		; Length 2769
 vdp_init_3_end:

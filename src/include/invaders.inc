@@ -8,7 +8,7 @@ init_invaders:
 	
 	ld a, (next_sprite_index) ; Sprite index
 	ld (inv_shot_spr), a
-	ld hl, inv_shot_sprite_data
+	ld hl, inv_shot_sprite_data_r
 	call def_sprite
 	call hide_sprite
 	
@@ -23,6 +23,20 @@ init_invaders:
 
 	ld (inv_shot_spr3), a
 	ld hl, inv_shot_sprite_data
+	call def_sprite
+	call hide_sprite
+
+	inc a
+
+	ld (saucer_spr), a
+	ld hl, saucer_sprite_data
+	call def_sprite
+	call hide_sprite
+
+	inc a
+
+	ld (saucer_exp_spr), a
+	ld hl, saucer_exp_sprite_data
 	call def_sprite
 	call hide_sprite
 	
@@ -67,6 +81,13 @@ reset_invaders:
 	ld (invader_direction), a
 	ld a, $34
 	ld (fleet_sound_timer), a
+
+	xor a
+	ld (saucer_active), a
+	ld (saucer_exploding), a
+	
+	ld hl, SAUCER_DELAY
+	ld (saucer_timer), hl
 
 	pop hl
 	pop de
@@ -181,7 +202,9 @@ update_invader_shots:
 	push af
 	push bc
 	push hl
-
+	
+	call saucer_timer
+	
 	ld a, (player_exploding)
 	and a
 	jp nz, @done
@@ -203,7 +226,96 @@ update_invader_shots:
 	ld (shot_timer), a
 	jp @done
 
+; Squiggly shot/saucer
 @shot3:
+	ld a, (saucer_start)
+	and a
+	jp z, @do_shot3
+	ld a, (shot3_step)
+	and a
+	jp nz, @do_shot3
+
+	ld a, (saucer_active)
+	and a
+	jp nz, @process_saucer
+
+@launch_saucer:
+	ld a, (saucer_spr)
+	call show_sprite
+	ld a, 1
+	ld (saucer_active), a
+	ld a, 0
+	ld (saucer_pos), a
+
+    ld a, -8
+    ld b, a
+    ld a, CHAN_SAUCER
+    ld de, 65535
+    call play_channel
+
+@process_saucer:
+	ld a, (saucer_exploding)
+	and a
+	jp z, @move_saucer
+	cp 2
+	jp nc, @saucer_exp_delay
+	ld a, (saucer_spr)
+	call hide_sprite
+	ld de, SAUCER_Y_POS
+	ld a, (saucer_pos)
+	ld c, a
+	ld b, 0
+	ld a, (saucer_exp_spr)
+	call move_sprite
+	call show_sprite
+
+    ld a, -9
+    ld b, a
+    ld a, CHAN_SAUCER
+    ld de, 1200
+    call play_channel
+
+@saucer_exp_delay:
+	ld hl, saucer_exploding
+	inc (hl)
+	ld a, (hl)
+	cp $20
+	jp c, @done
+	ld a, (saucer_exp_spr)
+	call hide_sprite
+	jp @saucer_exited
+
+@move_saucer:
+	ld de, SAUCER_Y_POS
+	ld a, (saucer_pos)
+	ld c, a
+	ld b, 0
+	ld a, (saucer_spr)
+	call move_sprite
+	ld a, (saucer_pos)
+	inc a
+	cp $d0
+	jp nc, @saucer_exited
+	ld (saucer_pos), a
+	jp @done
+	
+@saucer_exited:
+	ld hl, SAUCER_DELAY
+	call reset_saucer
+	xor a
+	ld (saucer_active), a
+	ld (saucer_start), a
+	ld (saucer_exploding), a
+	ld a, (saucer_spr)
+	call hide_sprite
+	xor a
+	ld c, a
+	ld a, CHAN_SAUCER
+	call set_volume
+	jp @done
+
+@do_shot3:	
+	ld a, (shot_timer)
 	dec a
 	ld (shot_timer), a
 	ld a, (ix + 5)	; column offset
@@ -217,6 +329,7 @@ update_invader_shots:
 	ld (other2), a
 	jr @doit
 
+; Plunger shot
 @shot2:
 	dec a
 	ld (shot_timer), a
@@ -231,6 +344,7 @@ update_invader_shots:
 	ld (other2), a
 	jr @doit
 	
+; Rolling shot
 @shot1:
 	ld a, (shot2_step)
 	ld (other1), a
@@ -350,10 +464,6 @@ invader_shoot:
 	push bc
 	push hl
 
-	ld a, (player_exploding)
-	and a
-	jp nz, @done
-
 	; Check reload rate
 	ld hl, shot_rate
 	ld a, (other1)
@@ -421,6 +531,34 @@ invader_shoot:
 	pop bc
 	pop af
 	ret
+	
+
+saucer_timer:
+	ld hl, 0
+	ld ix, time_to_saucer
+	ld a, (ix + 0)
+	ld l, a
+	ld a, (ix + 1)
+	ld h, a
+	dec hl
+	
+	ld a, l
+	or h
+	jp nz, reset_saucer 
+
+	ld a, 1
+	ld (saucer_start), a
+	ld hl, SAUCER_DELAY
+	
+; HL - saucer time delay 
+reset_saucer:
+	ld a, l
+	ld (ix + 0), a
+	ld a, h
+	ld (ix + 1), a
+
+	ret
+
 
 	
 	
@@ -708,7 +846,7 @@ kill_invader:
 	
 	ld a, -7
 	ld b, a
-	ld a, 2
+	ld a, CHAN_ALIEN
 	ld de, 420
 	call play_channel
 	
@@ -753,6 +891,10 @@ play_fleet_sound:
 	dec (hl)
 	jr nz, @done	
 	
+	ld a, (saucer_active)
+	and a,
+	jp nz, @done
+	
 	; Choose from the 4 sounds
 	ld hl, fleet_sound
 	inc (hl)
@@ -774,7 +916,7 @@ play_fleet_sound:
 	
 	; Play sound and reset timer
 	ld b, a
-	ld a, 2
+	ld a, CHAN_RANK
 	ld de, 73
 	call play_channel
 
@@ -864,7 +1006,7 @@ inv_state_end:
 
 ; Shot data blocks
 shot_timer:
-	db 2	; frame timer
+	db 0	; frame timer
 shot_data:
 
 	; Shot 1 "Rolling"
@@ -908,6 +1050,31 @@ other1:
 other2:
 	db 0
 	
+saucer_spr:
+	db 0
+saucer_exp_spr:
+	db 0
+
+saucer_sprite_data:
+	db 1, BMP_SAUCER
+saucer_exp_sprite_data:
+	db 1, BMP_SAUCER_EXPL
+	
+saucer_start:
+	db 0
+saucer_active:
+	db 0
+saucer_exploding:
+	db 0
+saucer_pos:
+	db 0
+SAUCER_Y_POS: equ 8
+SAUCER_Y_BASE: equ 16
+time_to_saucer:
+	dw $200
+SAUCER_DELAY: equ $600
+
+
 
 fleet_sound_timer:
 	db $01
