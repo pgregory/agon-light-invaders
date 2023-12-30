@@ -35,6 +35,15 @@ reset_player:
 
     ld a, (player_initial_position)
     ld (player_position), a
+    
+    ld a, 3
+    ld (player_lives), a
+    
+    ld hl, 0
+    ld (player_score), hl
+
+    ld a, (player_exp_spr)
+    call hide_sprite
 
     pop hl
     pop de
@@ -278,6 +287,18 @@ process_player:
     ld a, (player_initial_position)
     ld (player_position), a
 
+    ld a, (player_lives)
+    dec a
+    ld (player_lives), a
+    
+@check_invaded:
+    ld a, (invaded)
+    and a
+    jp z, @done
+    
+    xor a
+    ld (player_lives), a
+
 @done:
     pop bc
     pop hl
@@ -315,7 +336,7 @@ explode_player:
     ld a, CHAN_PLAYER
     ld de, 1200
     call play_channel
-
+    
     pop hl
     pop bc
     pop de
@@ -379,6 +400,9 @@ player_explode_counter:
     db 0
 player_score:
     dw 0
+    db 0    ; Allow for 24 bit addressing
+player_lives:
+    db 0
 player_state_end:
     db 0
     

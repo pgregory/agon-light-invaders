@@ -638,6 +638,24 @@ set_volume:
 @end:
 
 
+vdp_silence:
+	push af
+	push bc
+	ld a, 0
+	ld c, a
+	ld a, 0
+	call set_volume
+	ld a, 1
+	call set_volume
+	ld a, 2
+	call set_volume
+	ld a, 3
+	call set_volume
+	pop bc
+	pop af
+	ret
+
+
 ; HL - keycode
 check_key:
 	push hl

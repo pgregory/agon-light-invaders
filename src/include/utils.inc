@@ -94,3 +94,19 @@ print_Dec16:
     PRT_CHR
     ret
     
+
+; HL - Number to print
+print_Dec8:    
+    ld bc, -10
+    call @num1
+    ld c, -1
+@num1:
+    ld a, '0'-1
+@num2:
+    inc a
+    add hl, bc
+    jr c, @num2
+    sbc hl, bc
+    PRT_CHR
+    ret
+    

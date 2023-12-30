@@ -88,6 +88,10 @@ reset_invaders:
 	
 	ld hl, SAUCER_DELAY
 	ld (saucer_timer), hl
+	
+	ld a, (saucer_spr)
+	call hide_sprite
+
 
 	pop hl
 	pop de
@@ -121,15 +125,32 @@ update_invaders:
 	ld a, (invader_cursor)
 	jp nz, @hide
 	
-	call get_curr_inv_coords	; Get invader coords BC, HL
+	call get_curr_inv_coords	; Get invader coords BC, DE
 	ld (last_invader_x_pos), bc	; Store X for boundary check
-
+	
 	call get_inv_bitmaps
 	ld a, (hl)
 	ld hl, invader_anim_frame
 	add a, (hl)
 	call draw_bitmap
 
+	; Check if the alien is at the bottom of the screen
+@check_end:
+	push hl
+	push de
+	ld hl, PLAYER_YPOS-20
+	or a
+	sbc hl, de
+	pop de
+	pop hl
+	jp nc, @not_end
+
+	call explode_player
+	ld a, 1
+	ld (invaded), a
+	jp @next
+
+@not_end:
 	ld hl, (last_invader_x_pos)	; Check boundary conditions
 	ld a, l
 	cp 10
@@ -605,12 +626,14 @@ bottom_invader_in_column:
 	ret
 
 	
-; A - index
+; A <- index
+; BC -> X
+; DE -> Y
 get_curr_inv_coords:
 	push af
 
-	ld c, 0 ; X ref
-	ld e, 0 ; Y ref
+	ld de, 0
+	ld bc, 0
 @row_loop:
 	cp 11
 	jp m, @at_row
@@ -1014,6 +1037,8 @@ saucer_active:
 saucer_exploding:
 	db 0
 saucer_pos:
+	db 0
+invaded:
 	db 0
 
 inv_state_end:	

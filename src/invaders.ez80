@@ -88,6 +88,11 @@ new_game:
 	call update_sprites
 
 	call process_player
+	
+	ld a, (player_lives)
+	or a
+	jp z, game_over
+	
 	call update_gui
 	call play_fleet_sound
 	
@@ -110,6 +115,12 @@ new_game:
 exit:	
 	call vdp_close
 	ret
+	
+
+game_over:
+	call vdp_cls
+	call vdp_silence
+	jp display_menu
 
 delay:
 	push bc
@@ -133,14 +144,14 @@ display_gui:
 	pop bc
 	pop hl
 
-	ld a, BMP_PLAYER
-	ld bc, 8*30
-	ld de, 165
-	call draw_bitmap
-	ld bc, 8*30+8+16
-	call draw_bitmap
-	ld bc, 8*30+8+16+8+16
-	call draw_bitmap
+	; ld a, BMP_PLAYER
+	; ld bc, 8*30
+	; ld de, 165
+	; call draw_bitmap
+	; ld bc, 8*30+8+16
+	; call draw_bitmap
+	; ld bc, 8*30+8+16+8+16
+	; call draw_bitmap
 
 	ret
 
@@ -153,22 +164,32 @@ display_gui:
 	db "SCORE"
 	; db 31, 30, 7
 	; db "00020"
-	db 31, 31, 10
-	db "HI"
-	db 31, 30, 11
-	db "SCORE"
-	db 31, 30, 13 
-	db "00000"
+	; db 31, 31, 10
+	; db "HI"
+	; db 31, 30, 11
+	; db "SCORE"
+	; db 31, 30, 13 
+	; db "00000"
 	db 31, 30, 19
-	db "03"
+	db "99"
 @title_end:
 
 
 update_gui:
+	; Update score
 	ld.lil bc, $071e
 	call set_cursor
 	ld hl, (player_score)
 	call print_Dec16
+
+	; Update lives
+	ld.lil bc, $131e
+	call set_cursor
+	ld a, (player_lives)
+	ld hl, 0
+	ld l, a
+	call print_Dec8
+
 	ret
 
 
