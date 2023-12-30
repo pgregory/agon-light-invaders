@@ -231,6 +231,7 @@ update_invader_shots:
 	ld a, (saucer_start)
 	and a
 	jp z, @do_shot3
+
 	ld a, (shot3_step)
 	and a
 	jp nz, @do_shot3
@@ -254,6 +255,9 @@ update_invader_shots:
     call play_channel
 
 @process_saucer:
+	ld a, (shot_timer)
+	dec a
+	ld (shot_timer), a
 	ld a, (saucer_exploding)
 	and a
 	jp z, @move_saucer
@@ -293,7 +297,9 @@ update_invader_shots:
 	ld a, (saucer_spr)
 	call move_sprite
 	ld a, (saucer_pos)
-	inc a
+	ld c, a
+	ld a, (saucer_delta)
+	add a, c
 	cp $d0
 	jp nc, @saucer_exited
 	ld (saucer_pos), a
@@ -1000,6 +1006,16 @@ inv_explode_time:
 	db 0
 exploding_inv:
 	db 0
+
+saucer_start:
+	db 0
+saucer_active:
+	db 0
+saucer_exploding:
+	db 0
+saucer_pos:
+	db 0
+
 inv_state_end:	
 	db 0
 
@@ -1044,6 +1060,8 @@ shot3_step:
 	db 6	; column offset
 	db 0	; target player
 	
+saucer_delta:
+	db 2
 
 other1:
 	db 0
@@ -1060,14 +1078,6 @@ saucer_sprite_data:
 saucer_exp_sprite_data:
 	db 1, BMP_SAUCER_EXPL
 	
-saucer_start:
-	db 0
-saucer_active:
-	db 0
-saucer_exploding:
-	db 0
-saucer_pos:
-	db 0
 SAUCER_Y_POS: equ 8
 SAUCER_Y_BASE: equ 16
 time_to_saucer:

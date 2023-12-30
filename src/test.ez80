@@ -1,8 +1,14 @@
+SOMETHING: equ 1
+
     if SOMETHING
     ld a, 10
     endif
+    
+label:
 
+; A comment.
 @test_label:
+    ld hl, (@p)
     inc (hl)
     jp @test_label
 @p:

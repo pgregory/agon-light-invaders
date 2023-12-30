@@ -1,0 +1,8 @@
+This is a mix of MAME official samples and Neil Bradley's Retrocade samples, 
+all of which I have modified and/or mixed myself. For the saucer, "0" wav 
+works only in versions 36b16 or older but it's still currently used in 
+Astro Invader and other games that require the invaders sample set 
+Thanks to Neil Bradley for providing his quality samples, Enjoy! :)
+
+ Gyrovision
+ 
