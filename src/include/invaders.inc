@@ -56,15 +56,11 @@ reset_invaders:
 	push de
 	push hl
 	ld a, 0
-	ld b, 55 ; Number of invaders
-@inv_def_loop:
-	ld hl, invaders
-	ld.l de, 0
-	ld e, a
-	add hl, de
-	ld (hl), 0
-	add a, 1
-	djnz @inv_def_loop
+
+	ld bc, 55 ; Number of invaders
+	ld hl, initial_invaders
+	ld de, invaders
+	ldir
 	
 	ld hl, inv_state_start
 	ex de, hl
@@ -97,6 +93,26 @@ reset_invaders:
 	pop de
 	pop bc
 	pop af
+	
+	ret
+	
+
+cancel_inv_shots:
+	ld a, 0
+	ld (shot_1), a
+	ld (shot1_step), a
+	ld (shot_2), a
+	ld (shot2_step), a
+	ld (shot_3), a
+	ld (shot3_step), a
+	ld (shot_timer), a
+	
+	ld a, (inv_shot_spr)
+	call hide_sprite
+	ld a, (inv_shot_spr2)
+	call hide_sprite
+	ld a, (inv_shot_spr3)
+	call hide_sprite
 	
 	ret
 	
@@ -256,6 +272,10 @@ update_invader_shots:
 	ld a, (shot3_step)
 	and a
 	jp nz, @do_shot3
+	
+	ld a, (invader_count)
+	cp 8
+	jp c, @do_shot3
 
 	ld a, (saucer_active)
 	and a
@@ -907,6 +927,7 @@ count_invaders:
 	jr nz, @next
 	inc c
 @next:
+	inc d
 	inc hl
 	dec b
 	jr nz, @loop
@@ -994,6 +1015,21 @@ invaders:
 	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+
+
+initial_invaders:
+	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+
+; For testing
+;	db 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+;	db 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1
+;	db 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+;	db 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1
+;	db 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
 
 
 ; Invader shoot calculation

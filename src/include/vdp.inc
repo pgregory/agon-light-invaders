@@ -222,6 +222,7 @@ vdp_close:
 	ld hl, @cmd
 	ld bc, @end-@cmd
 	rst.lil $18
+	call vdp_silence
 	ret
 @cmd:
 	db 22, 1

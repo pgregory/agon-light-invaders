@@ -45,10 +45,19 @@ reset_player:
     ld a, (player_exp_spr)
     call hide_sprite
 
+    call cancel_player_shot
+
     pop hl
     pop de
     pop bc
     
+    ret
+    
+cancel_player_shot:
+    ld a, (bullet_spr)
+    call hide_sprite
+    xor a
+    ld (bullet_active), a
     ret
 
 

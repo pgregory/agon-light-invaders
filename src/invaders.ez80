@@ -52,13 +52,8 @@ display_menu:
 	db "ANY KEY TO PLAY"
 @menu_end:
 
-	
-;--------------------------------
-new_game:
-	call vdp_cls
-	call reset_player
-	call reset_invaders
 
+redraw_playfield:
 	ld a, BMP_SHIELD
 	ld bc, 32
 	ld de, 140
@@ -74,6 +69,20 @@ new_game:
 	ld ix, bottom_line
 	call draw_line
 	
+	ret
+
+	
+;--------------------------------
+new_game:
+	call vdp_cls
+	call reset_player
+	call reset_invaders
+	call redraw_playfield
+
+	ld a, 2
+	ld ix, bottom_line
+	call draw_line
+	
 	ld a, (next_sprite_index)
 	call activate_sprites
 	
@@ -82,6 +91,15 @@ new_game:
 @loop:
 	call delay 
 	call count_invaders
+	
+	ld a, (inv_exploding)
+	and a
+	jp nz, @continue_update
+	ld a, (invader_count)
+	and a
+	jp z, @next_round
+	
+@continue_update:
 	call update_invaders
 	call update_invader_shots
 
@@ -112,6 +130,14 @@ new_game:
 	jr z, exit
 
 	jr @loop
+
+@next_round:
+	call reset_invaders
+	call cancel_inv_shots
+	call cancel_player_shot
+	call redraw_playfield
+	jr @loop
+
 exit:	
 	call vdp_close
 	ret
@@ -121,6 +147,7 @@ game_over:
 	call vdp_cls
 	call vdp_silence
 	jp display_menu
+	
 
 delay:
 	push bc
