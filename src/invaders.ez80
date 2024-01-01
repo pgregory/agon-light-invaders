@@ -106,6 +106,7 @@ new_game:
 	call update_sprites
 
 	call process_player
+	call update_player_shot
 	
 	ld a, (player_lives)
 	or a

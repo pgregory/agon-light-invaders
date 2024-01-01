@@ -328,6 +328,32 @@ update_invader_shots:
 	jp c, @done
 	ld a, (saucer_exp_spr)
 	call hide_sprite
+
+	; Add score
+@add_saucer_score:
+	ld hl, (player_shots)
+	ld a, l
+	ld bc, 0
+	and $f
+	ld c, a
+	ld hl, saucer_scores
+	add hl, bc
+	ld a, (hl)
+	ld hl, 0
+	ld c, a
+	add hl, bc
+	add hl, bc
+	add hl, bc
+	add hl, bc
+	add hl, bc
+	add hl, bc
+	add hl, bc
+	add hl, bc
+	add hl, bc
+	add hl, bc
+	ex de, hl
+	call add_to_score
+	
 	jp @saucer_exited
 
 @move_saucer:
@@ -750,7 +776,7 @@ get_inv_at:
 	push de
 	push hl
 	ld a, (invader_ref_y)
-	add a, 16 ; Bottom pixel row or invader rank
+	add a, 16 ; Bottom pixel row of invader rank
 	cp e
 	; Check if below the bottom row 
 	jp c, @none_y
@@ -759,6 +785,8 @@ get_inv_at:
 	srl a
 	srl a
 	srl	a; Divide by 16 to get row
+	cp 5
+	jp nc, @none_y
 	ld l, a
 	ld h, 11
 	mlt hl
@@ -1145,7 +1173,8 @@ time_to_saucer:
 	dw $200
 SAUCER_DELAY: equ $600
 
-
+saucer_scores:
+	db 10, 05, 05, 10, 15, 10, 10, 05, 30, 10, 10, 10, 05, 15, 10, 05
 
 fleet_sound_timer:
 	db $01

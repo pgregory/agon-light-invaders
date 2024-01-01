@@ -106,173 +106,8 @@ process_player:
     ld de, PLAYER_YPOS
     call move_sprite
     
-@check_fire:
-    ld a, (inv_exploding)
-    and a
-    jp nz, @move_bullet
-
-    ld a, (bullet_active)
-    and a
-    jp nz, @move_bullet
-
-    ld a, (shoot_bounce)
-    and a
-    jp nz, @shoot_debounce
-
-    ld hl, KEY_FIRE
-    call check_key
-    jp z, @done
-    
-    ld a, 1
-    ld (shoot_bounce), a
-    
-    ld a, -1
-    ld b, a
-    ld a, CHAN_PLAYER
-    ld de, 310
-    call play_channel
-    
-    ld a, (bullet_spr)
-    ld (bullet_active), a
-    call show_sprite
-
-    ld a, (player_position)
-    add a, 8
-    ld (bullet_pos_x), a
-    ld a, BULLET_START_YPOS
-    ld (bullet_pos_y), a
-    
-@move_bullet:
-    ld a, (bullet_active)
-    and a
-    jp z, @done
-    
-    ld a, (bullet_pos_y)
-    sbc a, 4
-    jp c, @bullet_exited
-
-    ld (bullet_pos_y), a
-
-    ld a, (bullet_pos_x)
-    ld c, a
-    ld b, 0
-    ld a, (bullet_pos_y)
-    ld e, a
-    ld d, 0
-    ld a, (bullet_spr)
-    call move_sprite
-    
-    ld a, (bullet_pos_y)
-    sub a, 4
-    ld h, 4
-    ld e, a
-    ld d, 0
-    ld ix, (pixel_data_ptr)
-@coll_loop:
-    call get_pixel_color
-    ld a, (ix + 0)
-    or a, (ix + 1)
-    or a, (ix + 2)
-    and a
-    jr nz, @collide
-    inc e
-    dec h
-    jr nz, @coll_loop
     jp @done
     
-@collide:
-    ld a, e
-    ld (bullet_col_pos), a
-    ; print pixel color 
-    if DEBUG
-    push af
-    push bc
-    push hl
-    ld bc, 1
-	call home_cursor
-    ld hl, (pixel_data_ptr)
-    ld a, (hl)
-	call print_Hex8
-    ld hl, (pixel_data_ptr)
-    ld bc, 1
-    add hl, bc
-    ld a, (hl)
-	call print_Hex8
-    ld hl, (pixel_data_ptr)
-    ld bc, 2
-    add hl, bc
-    ld a, (hl)
-	call print_Hex8
-    pop hl
-    pop bc
-    pop af
-    endif
-
-@check_inv:
-    ; Check if hit an invader
-    ld a, (bullet_pos_x)
-    ld c, a
-    ld b, 0
-    ld a, (bullet_col_pos)
-    ld e, a
-    ld d, 0
-    call get_inv_at
-    
-    ; print invader index hit
-    ;push af
-	;ld h, a
-    ;ld a, (bullet_pos_y)
-	;ld l, a
-	;call home_cursor
-	;call print_Hex16
-    ;pop af
-
-    cp 0x55 
-    jp nc, @check_shields
-
-    call kill_invader
-    
-    jp @bullet_exited
-
-@check_shields:
-    ; Check if the hit is in the range of the shields
-    ld a, (bullet_col_pos)
-    cp $80
-    jp c, @check_saucer
-
-    ld a, (bullet_pos_x)
-    sub 4
-    ld c, a
-    ld b, 0
-    ld a, (bullet_col_pos)
-    ld e, a
-    ld d, 0
-    ld a, BMP_PLYR_B_EXPL
-    call draw_bitmap
-
-    jp @bullet_exited
-    
-@check_saucer:
-    cp SAUCER_Y_BASE
-    jp nc, @bullet_exited
-
-    ld a, 1
-    ld (saucer_exploding), a
-    
-@bullet_exited:
-    xor a
-    ld (bullet_active), a
-    ld a, (bullet_spr)
-    call hide_sprite
-    jr @done
-
-@shoot_debounce:
-    ld hl, KEY_FIRE
-    call check_key
-    jp nz, @done
-    xor a
-    ld (shoot_bounce), a
-    jp @done
 
 @player_exploding_countdown:
     ld hl, player_explode_time
@@ -316,6 +151,225 @@ process_player:
     ret
     
 
+update_player_shot:
+    push af
+    push bc
+    push hl
+    push de
+    ld a, (inv_exploding)
+    and a
+    jp nz, @move_bullet
+
+    ld a, (bullet_active)
+    and a
+    jp nz, @move_bullet
+
+    ld a, (shoot_bounce)
+    and a
+    jp nz, @shoot_debounce
+
+    ld hl, KEY_FIRE
+    call check_key
+    jp z, @done
+    
+    ld a, 1
+    ld (shoot_bounce), a
+    
+    ld a, -1
+    ld b, a
+    ld a, CHAN_PLAYER
+    ld de, 310
+    call play_channel
+    
+    ld a, (player_position)
+    add a, 8
+    ld (bullet_pos_x), a
+    ld a, BULLET_START_YPOS
+    ld (bullet_pos_y), a
+
+    ld a, (bullet_spr)
+    ld (bullet_active), a
+    call show_sprite
+    jp @update_bullet
+    
+@move_bullet:
+    ld a, (bullet_active)
+    and a
+    jp z, @done
+    
+    ld a, (bullet_pos_y)
+    sbc a, 4
+    ld (bullet_pos_y), a
+    jp nc, @check_collision
+
+    ; clear pixel color 
+    if DEBUG
+    push af
+    push bc
+    push hl
+    ld a, 31
+    PRT_CHR
+    ld a, 6
+    PRT_CHR
+    ld a, 0
+    PRT_CHR
+    ld a, '-'
+    PRT_CHR
+    PRT_CHR
+    PRT_CHR
+    PRT_CHR
+    PRT_CHR
+    PRT_CHR
+    ld a, ' '
+    PRT_CHR
+    PRT_CHR
+    PRT_CHR
+    pop hl
+    pop bc
+    pop af
+    endif
+
+    jp @bullet_exited
+
+@check_collision:
+    sub a, 4
+    ld h, 4
+    ld e, a
+    ld d, 0
+    ld bc, 0
+    ld a, (bullet_pos_x)
+    ld c, a
+    ld ix, (pixel_data_ptr)
+@coll_loop:
+    call get_pixel_color
+    ld a, (ix + 0)
+    or a, (ix + 1)
+    or a, (ix + 2)
+    and a
+    jr nz, @collide
+    inc e
+    dec h
+    jr nz, @coll_loop
+    jp @update_bullet
+    
+@collide:
+    ld a, e
+    ld (bullet_col_pos), a
+
+    ; print pixel color 
+    if DEBUG
+    push af
+    push bc
+    push hl
+    ld a, 31
+    PRT_CHR
+    ld a, 6
+    PRT_CHR
+    ld a, 0
+    PRT_CHR
+    ld a, (ix + 0)
+	call print_Hex8
+    ld a, (ix + 1)
+	call print_Hex8
+    ld a, (ix + 2)
+	call print_Hex8
+    ld a, ' '
+    PRT_CHR
+    ld a, (bullet_col_pos)
+    call print_Hex8
+    pop hl
+    pop bc
+    pop af
+    endif
+
+@check_inv:
+    ; Check if hit an invader
+    ld a, (bullet_pos_x)
+    ld c, a
+    ld b, 0
+    ld a, (bullet_col_pos)
+    ld e, a
+    ld d, 0
+    call get_inv_at
+    
+    ; print invader index hit
+    ;push af
+	;ld h, a
+    ;ld a, (bullet_pos_y)
+	;ld l, a
+	;call home_cursor
+	;call print_Hex16
+    ;pop af
+
+    cp 0x55 
+    jp nc, @check_shields
+
+    call kill_invader
+    
+    jp @bullet_exited
+
+@check_shields:
+    ; Check if the hit is in the range of the shields
+    ld a, (bullet_col_pos)
+    cp $80
+    jp c, @check_saucer
+
+    ld a, (bullet_pos_x)
+    sub 4
+    ld c, a
+    ld b, 0
+    ld a, (bullet_col_pos)
+    sub a, 4
+    ld e, a
+    ld d, 0
+    ld a, BMP_PLYR_B_EXPL
+    call draw_bitmap
+
+    jp @bullet_exited
+    
+@check_saucer:
+    cp SAUCER_Y_BASE
+    jp nc, @bullet_exited
+
+    ld a, 1
+    ld (saucer_exploding), a
+    
+@bullet_exited:
+    xor a
+    ld (bullet_active), a
+    ld a, (bullet_spr)
+    call hide_sprite
+    ld hl, (player_shots)
+    inc hl
+    ld (player_shots), hl
+
+    jr @done
+
+@shoot_debounce:
+    ld hl, KEY_FIRE
+    call check_key
+    jp nz, @done
+    xor a
+    ld (shoot_bounce), a
+    
+@update_bullet:
+    ld a, (bullet_pos_x)
+    ld c, a
+    ld b, 0
+    ld a, (bullet_pos_y)
+    ld e, a
+    ld d, 0
+    ld a, (bullet_spr)
+    call move_sprite
+
+@done:
+    pop de
+    pop hl
+    pop bc
+    pop af
+    ret
+; -----------
+
 explode_player:
     push af
     push de
@@ -353,12 +407,14 @@ explode_player:
     
     ret
 
-; HL - score to add
+; DE - score to add
 add_to_score:
+    push ix
 	ld ix, player_score
 	ld hl, (ix+0)
 	add hl, de
 	ld (ix+0), hl
+    pop ix
     
     ret
 
@@ -412,6 +468,8 @@ player_score:
     db 0    ; Allow for 24 bit addressing
 player_lives:
     db 0
+player_shots: 
+    dw 0
 player_state_end:
     db 0
     
